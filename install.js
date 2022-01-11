@@ -1,7 +1,7 @@
 async function install() {
   const { downloadRelease, getReleaseByTag } = require('./lib/install')
 
-  const release = await getReleaseByTag('v1.0.0-beta8-fix1')
+  const release = await getReleaseByTag('v1.0.0-beta8-fix2')
   await downloadRelease(release)
 }
 
