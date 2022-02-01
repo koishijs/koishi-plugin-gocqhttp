@@ -10,7 +10,9 @@
     "template.yml"
   ],
   "scripts": {
-    "postinstall": "node install"
+    "build": "node esbuild.config.mjs && tsc --emitDeclarationOnly --outDir lib",
+    "dev": "node esbuild.config.mjs  && node install.js && tsc --emitDeclarationOnly --outDir lib",
+    "postinstall": "node install.js"
   },
   "author": "Shigma <shigma10826@gmail.com>",
   "license": "AGPL-3.0",
@@ -32,12 +34,16 @@
   ],
   "peerDependencies": {
     "@koishijs/plugin-adapter-onebot": "^4.0.0",
-    "koishi": "^4.0.1"
+    "koishi": "^4.1.1"
   },
   "devDependencies": {
     "@octokit/openapi-types": "^11.2.0",
     "@types/cross-spawn": "^6.0.2",
-    "@types/tar": "^6.1.1"
+    "@types/tar": "^6.1.1",
+    "esbuild": "^0.14.14",
+    "typescript": "^4.5.5",
+    "@koishijs/plugin-adapter-onebot": "^4.0.0",
+    "koishi": "^4.1.1"
   },
   "dependencies": {
     "axios": "^0.24.0",

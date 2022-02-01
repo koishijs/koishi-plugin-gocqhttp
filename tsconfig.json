@@ -2,18 +2,18 @@
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
-    "target": "es2020",
+    "target": "esnext",
     "module": "commonjs",
     "declaration": true,
     "emitDeclarationOnly": true,
     "composite": true,
     "incremental": true,
-    "skipLibCheck": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
     "strictBindCallApply": true,
+    "skipLibCheck": true
   },
   "include": [
     "src",
-  ],
+  ]
 }
