@@ -4,8 +4,6 @@ import { components } from '@octokit/openapi-types'
 import { resolve } from 'path'
 import { extract } from 'tar'
 
-const { mkdir, rm, writeFile } = fsp
-
 type Release = components['schemas']['release']
 
 function getArch() {
@@ -31,15 +29,10 @@ function getPlatform() {
 
 export async function getLatestRelease(repo: string) {
   const { data } = await axios.get<Release[]>(`https://api.github.com/repos/${repo}/releases`)
-  return data[0]
+  return data[0].tag_name
 }
 
-export async function getReleaseByTag(repo: string, tag: string) {
-  const { data } = await axios.get<Release[]>(`https://api.github.com/repos/${repo}/releases/tags/${tag}`)
-  return data
-}
-
-export async function downloadRelease(release: Release) {
+export async function downloadRelease(tag: string) {
   const arch = getArch()
   const platform = getPlatform()
   const outDir = resolve(__dirname, '../bin')
@@ -47,26 +40,20 @@ export async function downloadRelease(release: Release) {
   if (existsSync(outDir)) return
 
   const name = `go-cqhttp_${platform}_${arch}.${platform === 'windows' ? 'exe' : 'tar.gz'}`
-  const asset = release.assets.find(asset => asset.name === name)
-  if (!asset) throw new Error(`target "${name}" is not found`)
-
   const mirror = process.env.GITHUB_MIRROR || 'https://download.fastgit.org'
-  const url = asset.browser_download_url.replace('https://github.com', mirror)
+  const url = `${mirror}/Mrs4s/go-cqhttp/releases/download/${tag}/${name}`
   const [{ data: stream }] = await Promise.all([
     axios.get<NodeJS.ReadableStream>(url, { responseType: 'stream' }),
-    mkdir(outDir, { recursive: true }),
+    fsp.mkdir(outDir, { recursive: true }),
   ])
 
-  await Promise.all([
-    writeFile(outDir + '/index.json', JSON.stringify({ ...release, assets: undefined })),
-    new Promise(async (resolve, reject) => {
-      stream.on('end', resolve)
-      stream.on('error', reject)
-      if (platform === 'windows') {
-        stream.pipe(createWriteStream(outDir + '/go-cqhttp'))
-      } else {
-        stream.pipe(extract({ cwd: outDir, newer: true }, ['go-cqhttp']))
-      }
-    })
-  ]).catch(() => rm(outDir, { force: true, recursive: true }))
+  return new Promise<void>(async (resolve, reject) => {
+    stream.on('end', resolve)
+    stream.on('error', reject)
+    if (platform === 'windows') {
+      stream.pipe(createWriteStream(outDir + '/go-cqhttp'))
+    } else {
+      stream.pipe(extract({ cwd: outDir, newer: true }, ['go-cqhttp']))
+    }
+  }).catch(() => fsp.rm(outDir, { force: true, recursive: true }))
 }

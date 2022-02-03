@@ -1,5 +1,5 @@
 import { Context, Schema, interpolate, Logger } from 'koishi'
-import onebot, { OneBotBot, HttpServer, WebSocketClient, WebSocketServer } from '@koishijs/plugin-adapter-onebot'
+import onebot, { OneBotBot } from '@koishijs/plugin-adapter-onebot'
 import { spawn } from 'cross-spawn'
 import { ChildProcess } from 'child_process'
 import { resolve } from 'path'
@@ -26,12 +26,6 @@ export interface Config {}
 
 export const Config = Schema.object({})
 
-const password = Schema.string().description('机器人的密码。')
-
-HttpServer.schema.dict.password = password
-WebSocketClient.schema.dict.password = password
-WebSocketServer.schema.dict.password = password
-
 const logLevelMap = {
   DEBUG: 'debug',
   INFO: 'debug',
@@ -42,8 +36,9 @@ const logLevelMap = {
 async function start(bot: OneBotBot) {
   // create working folder
   const cwd = resolve(bot.app.baseDir, 'accounts/' + bot.selfId)
+  const file = '/go-cqhttp' + (process.platform === 'win32' ? '.exe' : '')
   await mkdir(cwd, { recursive: true })
-  await copyFile(resolve(__dirname, '../bin/go-cqhttp'), cwd + '/go-cqhttp')
+  await copyFile(resolve(__dirname, '../bin/go-cqhttp'), cwd + file)
 
   // create config.yml
   const { port, host = 'localhost' } = bot.app.options
@@ -57,7 +52,7 @@ async function start(bot: OneBotBot) {
   }, /<<(.+?)>>/g))
 
   // spawn go-cqhttp process
-  bot.process = spawn('./go-cqhttp', ['faststart'], { cwd })
+  bot.process = spawn('.' + file, ['faststart'], { cwd })
   return new Promise<void>((resolve, reject) => {
     bot.process.stderr.on('data', (data) => {
       data = data.toString().trim()
