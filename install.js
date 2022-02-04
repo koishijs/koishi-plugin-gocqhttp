@@ -1,3 +1,5 @@
+const { existsSync } = require('fs')
+
 async function install() {
   const {
     downloadRelease,
@@ -12,6 +14,6 @@ async function install() {
   await downloadRelease(version)
 }
 
-if (__dirname.includes('node_modules')) {
+if (!existsSync(__dirname + '/bin')) {
   install()
 }
