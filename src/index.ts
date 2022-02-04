@@ -49,7 +49,7 @@ async function start(bot: OneBotBot) {
     adapter: bot.adapter.config,
     endpoint: bot.config.endpoint && new URL(bot.config.endpoint),
     selfUrl: `${host}:${port}${path}`,
-  }, /<<(.+?)>>/g))
+  }, /\$\{\{(.+?)\}\}/g))
 
   // spawn go-cqhttp process
   bot.process = spawn('.' + file, ['faststart'], { cwd })
