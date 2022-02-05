@@ -1,5 +1,6 @@
 import { Context, Schema, interpolate, Logger } from 'koishi'
 import onebot, { OneBotBot } from '@koishijs/plugin-adapter-onebot'
+import {} from '@koishijs/plugin-console'
 import { spawn } from 'cross-spawn'
 import { ChildProcess } from 'child_process'
 import { resolve } from 'path'
@@ -10,7 +11,7 @@ const { mkdir, copyFile, readFile, writeFile } = fsp
 
 declare module '@koishijs/plugin-adapter-onebot/lib/bot' {
   interface BotConfig {
-    password?: string
+    gocqhttp?: boolean
   }
 
   interface OneBotBot {
@@ -24,7 +25,7 @@ export const name = 'go-cqhttp'
 
 export interface Config {}
 
-export const Config = Schema.object({})
+export const Config: Schema<Config> = Schema.object({})
 
 const logLevelMap = {
   DEBUG: 'debug',
@@ -80,12 +81,20 @@ export function apply(ctx: Context, config: Config = {}) {
   logger.level = config.logLevel || 2
 
   ctx.on('bot-connect', async (bot: OneBotBot) => {
-    if (bot.adapter.platform !== 'onebot') return
+    if (!bot.config.gocqhttp) return
     return start(bot)
   })
 
   ctx.on('bot-disconnect', async (bot: OneBotBot) => {
-    if (bot.adapter.platform !== 'onebot') return
+    if (!bot.config.gocqhttp) return
     bot.process?.kill()
+  })
+
+  ctx.using(['console'], (ctx) => {
+    if (ctx.console.config.devMode) {
+      ctx.console.addEntry(resolve(__dirname, '../client/index.ts'))
+    } else {
+      ctx.console.addEntry(resolve(__dirname, '../dist'))
+    }
   })
 }

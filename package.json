@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@koishijs/plugin-console": "^2.1.0",
+    "@koishijs/plugin-manager": "^1.0.1",
     "@octokit/openapi-types": "^11.2.0",
     "@types/cross-spawn": "^6.0.2",
     "@types/tar": "^6.1.1"
