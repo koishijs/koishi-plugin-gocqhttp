@@ -76,7 +76,7 @@ async function start(bot: OneBotBot, config: Config) {
   }, /\$\{\{(.+?)\}\}/g))
 
   // spawn go-cqhttp process
-  bot.process = spawn('.' + file, ['faststart'], { cwd })
+  bot.process = spawn('.' + file, ['-faststart'], { cwd })
 
   return new Promise<void>((resolve, reject) => {
     bot.process.stdout.on('data', (data) => {
