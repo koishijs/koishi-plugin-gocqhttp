@@ -1,6 +1,6 @@
 import SchemaView from './schema.vue'
 import QRCodeView from './qrcode.vue'
-import { defineExtension, store } from '~/client'
+import { defineExtension, store } from '@koishijs/client'
 import {} from '@koishijs/plugin-manager'
 import {} from 'koishi-plugin-gocqhttp'
 

@@ -1,7 +1,9 @@
 <template>
   <k-comment class="qrcode" type="warning" v-if="data.qrcode">
-    <template #header>请使用手机登录 QQ 扫描二维码：</template>
-    <img :src="data.qrcode"/>
+    请使用手机登录 QQ 扫描二维码：
+    <template #body>
+      <img :src="data.qrcode"/>
+    </template>
   </k-comment>
 </template>
 

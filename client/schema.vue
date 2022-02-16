@@ -10,7 +10,7 @@
 import { PropType } from 'vue'
 import { BotProvider } from '@koishijs/plugin-manager'
 import {} from 'koishi-plugin-gocqhttp'
-import { Schema } from '~/components'
+import { Schema } from '@koishijs/client'
 
 defineProps({
   data: {} as PropType<BotProvider.Data>,

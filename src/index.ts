@@ -1,4 +1,4 @@
-import { Context, Schema, interpolate, Logger } from 'koishi'
+import { Context, interpolate, Logger, Schema } from 'koishi'
 import onebot, { OneBotBot } from '@koishijs/plugin-adapter-onebot'
 import {} from '@koishijs/plugin-manager'
 import { spawn } from 'cross-spawn'
@@ -135,10 +135,9 @@ export function apply(ctx: Context, config: Config) {
       qrcode: bot.qrcode,
     }))
 
-    if (ctx.console.config.devMode) {
-      ctx.console.addEntry(resolve(__dirname, '../client/index.ts'))
-    } else {
-      ctx.console.addEntry(resolve(__dirname, '../dist'))
-    }
+    ctx.console.addEntry({
+      dev: resolve(__dirname, '../client/index.ts'),
+      prod: resolve(__dirname, '../dist'),
+    })
   })
 }

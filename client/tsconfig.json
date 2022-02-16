@@ -12,6 +12,9 @@
     "moduleResolution": "node",
     "strictBindCallApply": true,
     "noEmit": true,
+    "types": [
+      "@koishijs/client/global",
+    ],
   },
   "include": [
     ".",
