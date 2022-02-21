@@ -49,7 +49,7 @@ export async function downloadRelease(tag: string) {
       fsp.mkdir(outDir, { recursive: true }),
     ])
 
-    return new Promise<void>(async (resolve, reject) => {
+    return await new Promise<void>((resolve, reject) => {
       stream.on('end', resolve)
       stream.on('error', reject)
       if (platform === 'windows') {
