@@ -16,6 +16,6 @@ defineProps({
   data: {} as PropType<BotProvider.Data>,
 })
 
-const boolean = Schema.boolean()
+const boolean = Schema.boolean().default(false)
 
 </script>

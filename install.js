@@ -6,7 +6,7 @@ async function install() {
     getLatestRelease,
   } = require('./lib/install')
 
-  let version = process.env.GOCQHTTP_VERSION || 'v1.0.0-rc1'
+  let version = process.env.GOCQHTTP_VERSION || 'v1.0.0-rc3'
   if (version === 'latest') {
     version = await getLatestRelease()
   }

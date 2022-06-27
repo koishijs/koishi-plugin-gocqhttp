@@ -102,7 +102,7 @@ async function start(bot: OneBotBot, config: Config) {
 
     bot.process.on('exit', () => {
       bot.process = null
-      reject()
+      reject(new Error())
     })
 
     if (bot.config.protocol === 'ws-reverse') {
