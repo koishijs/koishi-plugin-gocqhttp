@@ -6,5 +6,5 @@
 
 ## 环境变量
 
-- GITHUB_MIRROR：下载所用的 GitHub 镜像，默认为 https://download.fastgit.org
-- GOCQHTTP_VERSION：要使用的 go-cqhttp 版本，设置为 latest 则使用最新版本，当前默认为 v1.0.0-beta8-fix2
+- GITHUB_MIRROR：下载所用的 GitHub 镜像，默认为 https://github.com
+- GOCQHTTP_VERSION：要使用的 go-cqhttp 版本，设置为 latest 则使用最新版本，当前默认为 v1.0.0-rc3
