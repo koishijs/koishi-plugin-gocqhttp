@@ -40,7 +40,7 @@ export async function downloadRelease(tag: string) {
   if (existsSync(outDir)) return
 
   const name = `go-cqhttp_${platform}_${arch}.${platform === 'windows' ? 'exe' : 'tar.gz'}`
-  const mirror = process.env.GITHUB_MIRROR || 'https://download.fastgit.org'
+  const mirror = process.env.GITHUB_MIRROR || 'https://github.com'
   const url = `${mirror}/Mrs4s/go-cqhttp/releases/download/${tag}/${name}`
 
   try {

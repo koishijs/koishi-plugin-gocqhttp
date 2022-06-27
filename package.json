@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-gocqhttp",
   "description": "go-cqhttp launcher for Koishi",
-  "version": "2.2.4",
+  "version": "2.3.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -17,35 +17,42 @@
   "license": "AGPL-3.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/koishijs/koishi.git"
+    "url": "git+https://github.com/koishijs/koishi-plugin-gocqhttp.git"
   },
   "bugs": {
     "url": "https://github.com/koishijs/koishi/issues"
   },
-  "homepage": "https://koishi.js.org/plugin/gocqhttp.html",
+  "homepage": "https://github.com/koishijs/koishi-plugin-gocqhttp",
   "keywords": [
     "bot",
     "qqbot",
     "cqhttp",
+    "gocqhttp",
     "coolq",
     "chatbot",
-    "koishi",
-    "optional:console"
+    "koishi"
   ],
+  "koishi": {
+    "service": {
+      "optional": [
+        "console"
+      ]
+    }
+  },
   "peerDependencies": {
-    "@koishijs/plugin-adapter-onebot": "^4.1.2",
-    "koishi": "^4.3.1"
+    "@koishijs/plugin-adapter-onebot": "^4.2.7",
+    "koishi": "^4.7.5"
   },
   "devDependencies": {
-    "@koishijs/client": "^3.1.2",
-    "@koishijs/plugin-console": "^3.1.2",
-    "@koishijs/plugin-manager": "^1.5.3",
+    "@koishijs/client": "^3.4.2",
+    "@koishijs/plugin-console": "^3.4.2",
+    "@koishijs/plugin-manager": "^1.9.2",
     "@octokit/openapi-types": "^11.2.0",
     "@types/cross-spawn": "^6.0.2",
     "@types/tar": "^6.1.1"
   },
   "dependencies": {
-    "axios": "^0.24.0",
+    "axios": "^0.26.1",
     "cross-spawn": "^7.0.3",
     "strip-ansi": "^6.0.1",
     "tar": "^6.1.11"
