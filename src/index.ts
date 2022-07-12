@@ -71,7 +71,8 @@ async function start(bot: OneBotBot, config: Config) {
   const template = await readFile(
     config.template
       ? resolve(config.template)
-      : resolve(__dirname, '../template/config.yml'), 'utf8',
+      : resolve(__dirname, '../template/config.yml'),
+    'utf8',
   )
   await writeFile(cwd + '/config.yml', interpolate(template, {
     bot: bot.config,
