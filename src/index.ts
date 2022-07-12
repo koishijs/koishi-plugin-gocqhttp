@@ -43,7 +43,6 @@ export const name = 'go-cqhttp'
 export interface Config {
   root?: string
   template?: string
-  templatePath?: string
   logLevel?: number
 }
 
@@ -69,8 +68,11 @@ async function start(bot: OneBotBot, config: Config) {
   // create config.yml
   const { port, host = 'localhost' } = bot.app.options
   const { path = '/onebot' } = bot.app.registry.get(onebot).config
-  const templatePath = config.templatePath ? resolve(config.templatePath) : resolve(__dirname, '../template/config.yml')
-  const template = config.template ?? await readFile(templatePath, 'utf8')
+  const template = await readFile(
+    config.template
+      ? resolve(config.template)
+      : resolve(__dirname, '../template/config.yml'), 'utf8',
+  )
   await writeFile(cwd + '/config.yml', interpolate(template, {
     bot: bot.config,
     adapter: bot.adapter.config,
