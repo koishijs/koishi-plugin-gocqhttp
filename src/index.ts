@@ -70,7 +70,7 @@ async function start(bot: OneBotBot, config: Config) {
   const { path = '/onebot' } = bot.app.registry.get(onebot).config
   const template = await readFile(
     config.template
-      ? resolve(config.template)
+      ? resolve(bot.app.baseDir, config.template)
       : resolve(__dirname, '../template/config.yml'),
     'utf8',
   )
