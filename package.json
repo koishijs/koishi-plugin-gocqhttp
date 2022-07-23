@@ -40,13 +40,13 @@
     }
   },
   "peerDependencies": {
-    "@koishijs/plugin-adapter-onebot": "^4.2.7",
-    "koishi": "^4.7.5"
+    "@koishijs/plugin-adapter-onebot": "^5.0.5",
+    "koishi": "^4.8.1"
   },
   "devDependencies": {
-    "@koishijs/client": "^3.4.2",
-    "@koishijs/plugin-console": "^3.4.2",
-    "@koishijs/plugin-manager": "^1.9.2",
+    "@koishijs/client": "^4.1.0",
+    "@koishijs/plugin-console": "^4.1.0",
+    "@koishijs/plugin-market": "^1.0.0",
     "@octokit/openapi-types": "^11.2.0",
     "@types/cross-spawn": "^6.0.2",
     "@types/tar": "^6.1.1"

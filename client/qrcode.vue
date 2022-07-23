@@ -1,25 +1,32 @@
 <template>
-  <k-comment class="qrcode" type="warning" v-if="data.qrcode">
-    请使用手机登录 QQ 扫描二维码：
-    <template #body>
-      <img :src="data.qrcode"/>
-    </template>
-  </k-comment>
+  <template v-if="data">
+    <k-comment class="qrcode" type="warning">
+      请使用手机登录 QQ 扫描二维码：
+      <template #body>
+        <img :src="data.qrcode"/>
+      </template>
+    </k-comment>
+  </template>
 </template>
 
 <script lang="ts" setup>
 
-import { PropType } from 'vue'
-import { BotProvider } from '@koishijs/plugin-manager'
+import { inject, computed } from 'vue'
 import {} from 'koishi-plugin-gocqhttp'
+import { store } from '@koishijs/client'
 
-defineProps({
-  data: {} as PropType<BotProvider.Data>,
+const local: any = inject('manager.local')
+const config: any = inject('manager.config')
+
+const data = computed(() => {
+  if (local.value.name !== '@koishijs/plugin-adapter-onebot') return
+  const sid = `${config.value.platform || 'onebot'}:${config.value.selfId}`
+  return store.gocqhttp?.[sid]
 })
 
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 
 .qrcode img {
   display: block;

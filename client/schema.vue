@@ -8,7 +8,7 @@
 <script lang="ts" setup>
 
 import { PropType } from 'vue'
-import { BotProvider } from '@koishijs/plugin-manager'
+import { BotProvider } from '@koishijs/plugin-market'
 import {} from 'koishi-plugin-gocqhttp'
 import { Schema } from '@koishijs/client'
 

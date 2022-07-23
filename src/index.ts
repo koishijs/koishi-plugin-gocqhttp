@@ -1,54 +1,42 @@
-import { Context, interpolate, Logger, Schema } from 'koishi'
-import onebot, { OneBotBot } from '@koishijs/plugin-adapter-onebot'
-import {} from '@koishijs/plugin-manager'
+import { Context, Dict, interpolate, Logger, Schema } from 'koishi'
+import OneBotBot from '@koishijs/plugin-adapter-onebot'
+import {} from '@koishijs/plugin-market'
 import { spawn } from 'cross-spawn'
 import { ChildProcess } from 'child_process'
 import { resolve } from 'path'
 import { promises as fsp } from 'fs'
 import { URL } from 'url'
 import strip from 'strip-ansi'
+import { DataService } from '@koishijs/plugin-console'
 
 const { mkdir, copyFile, readFile, writeFile } = fsp
 
-declare module 'koishi' {
-  interface Bot {
+declare module '@koishijs/plugin-console' {
+  namespace Console {
+    interface Services {
+      gocqhttp: Launcher
+    }
+  }
+}
+
+declare module '@satorijs/adapter-onebot/lib/bot' {
+  interface OneBotBot {
     qrcode?: string
+    process: ChildProcess
   }
 
-  namespace Bot {
+  namespace OneBotBot {
     interface BaseConfig {
       gocqhttp?: boolean
     }
   }
 }
 
-declare module '@koishijs/plugin-manager' {
-  namespace BotProvider {
-    interface Data {
-      qrcode?: string
-    }
-  }
-}
-
-declare module '@koishijs/plugin-adapter-onebot/lib/bot' {
-  interface OneBotBot {
-    process: ChildProcess
-  }
+interface Data {
+  qrcode?: string
 }
 
 export const logger = new Logger('gocqhttp')
-
-export const name = 'go-cqhttp'
-
-export interface Config {
-  root?: string
-  template?: string
-  logLevel?: number
-}
-
-export const Config: Schema<Config> = Schema.object({
-  root: Schema.string().description('存放账户文件的目录。').default('accounts'),
-})
 
 const logLevelMap = {
   DEBUG: 'debug',
@@ -58,92 +46,110 @@ const logLevelMap = {
   FATAL: 'error',
 }
 
-async function start(bot: OneBotBot, config: Config) {
-  // create working folder
-  const cwd = resolve(bot.app.baseDir, config.root, bot.selfId)
-  const file = '/go-cqhttp' + (process.platform === 'win32' ? '.exe' : '')
-  await mkdir(cwd, { recursive: true })
-  await copyFile(resolve(__dirname, '../bin/go-cqhttp'), cwd + file)
+class Launcher extends DataService<Dict<Data>> {
+  data: Dict<Data> = Object.create(null)
 
-  // create config.yml
-  const { port, host = 'localhost' } = bot.app.options
-  const { path = '/onebot' } = bot.app.registry.get(onebot).config
-  const template = await readFile(
-    config.template
-      ? resolve(bot.app.baseDir, config.template)
-      : resolve(__dirname, '../template/config.yml'),
-    'utf8',
-  )
-  await writeFile(cwd + '/config.yml', interpolate(template, {
-    bot: bot.config,
-    adapter: bot.adapter.config,
-    endpoint: bot.config.endpoint && new URL(bot.config.endpoint),
-    selfUrl: `${host}:${port}${path}`,
-  }, /\$\{\{(.+?)\}\}/g))
+  constructor(ctx: Context, private config: Launcher.Config) {
+    super(ctx, 'gocqhttp')
+    logger.level = config.logLevel || 3
 
-  // spawn go-cqhttp process
-  bot.process = spawn('.' + file, ['-faststart'], { cwd })
+    ctx.on('bot-connect', async (bot: OneBotBot<Context>) => {
+      if (!bot.config.gocqhttp) return
+      return this.connect(bot)
+    })
 
-  return new Promise<void>((resolve, reject) => {
-    bot.process.stdout.on('data', (data) => {
-      data = strip(data.toString()).trim()
-      if (!data) return
-      for (const line of data.trim().split('\n')) {
-        const text = line.slice(23)
-        const [type] = text.split(']: ', 1)
-        if (type in logLevelMap) {
-          logger[logLevelMap[type]](text.slice(type.length + 3))
-        } else {
-          logger.info(line.trim())
+    ctx.on('bot-disconnect', async (bot: OneBotBot<Context>) => {
+      if (!bot.config.gocqhttp) return
+      return this.disconnect(bot)
+    })
+
+    ctx.using(['console.config'], (ctx) => {
+      ctx.console.addEntry({
+        dev: resolve(__dirname, '../client/index.ts'),
+        prod: resolve(__dirname, '../dist'),
+      })
+    })
+  }
+
+  async get() {
+    return this.data
+  }
+
+  async connect(bot: OneBotBot<Context>) {
+    // create working folder
+    const cwd = resolve(bot.ctx.baseDir, this.config.root, bot.selfId)
+    const file = '/go-cqhttp' + (process.platform === 'win32' ? '.exe' : '')
+    await mkdir(cwd, { recursive: true })
+    await copyFile(resolve(__dirname, '../bin/go-cqhttp'), cwd + file)
+
+    // create config.yml
+    const { port, host = 'localhost' } = bot.ctx.options
+    const { endpoint, path = '/onebot' } = bot.config as any
+    const template = await readFile(this.config.template
+      ? resolve(bot.ctx.baseDir, this.config.template)
+      : resolve(__dirname, '../template/config.yml'), 'utf8')
+    await writeFile(cwd + '/config.yml', interpolate(template, {
+      bot: bot.config,
+      endpoint: endpoint && new URL(endpoint),
+      selfUrl: `${host}:${port}${path}`,
+    }, /\$\{\{(.+?)\}\}/g))
+
+    // spawn go-cqhttp process
+    bot.process = spawn('.' + file, ['-faststart'], { cwd })
+
+    return new Promise<void>((resolve, reject) => {
+      bot.process.stdout.on('data', async (data) => {
+        data = strip(data.toString()).trim()
+        if (!data) return
+        for (const line of data.trim().split('\n')) {
+          const text = line.slice(23)
+          const [type] = text.split(']: ', 1)
+          if (type in logLevelMap) {
+            logger[logLevelMap[type]](text.slice(type.length + 3))
+          } else {
+            logger.info(line.trim())
+          }
+          if (text.includes('qrcode.png')) {
+            const buffer = await fsp.readFile(cwd + '/qrcode.png')
+            this.data[bot.sid] = {
+              qrcode: 'data:image/png;base64,' + buffer.toString('base64'),
+            }
+            this.refresh()
+          } else if (text.includes('アトリは、高性能ですから')) {
+            resolve()
+            delete this.data[bot.sid]
+            this.refresh()
+          }
         }
-        if (text.includes('qrcode.png')) {
-          setQRCode(bot, cwd)
-        } else if (text.includes('アトリは、高性能ですから')) {
-          resolve()
-          bot.qrcode = null
-          bot.app.console?.bots?.refresh()
-        }
+      })
+
+      bot.process.on('exit', () => {
+        bot.process = null
+        reject(new Error())
+      })
+
+      if (bot.config.protocol === 'ws-reverse') {
+        resolve()
       }
     })
+  }
 
-    bot.process.on('exit', () => {
-      bot.process = null
-      reject(new Error())
-    })
-
-    if (bot.config.protocol === 'ws-reverse') {
-      resolve()
-    }
-  })
-}
-
-async function setQRCode(bot: OneBotBot, cwd: string) {
-  const buffer = await fsp.readFile(cwd + '/qrcode.png')
-  bot.qrcode = 'data:image/png;base64,' + buffer.toString('base64')
-  bot.app.console?.bots?.refresh()
-}
-
-export function apply(ctx: Context, config: Config) {
-  logger.level = config.logLevel || 3
-
-  ctx.on('bot-connect', async (bot: OneBotBot) => {
-    if (!bot.config.gocqhttp) return
-    return start(bot, config)
-  })
-
-  ctx.on('bot-disconnect', async (bot: OneBotBot) => {
-    if (!bot.config.gocqhttp) return
+  async disconnect(bot: OneBotBot<Context>) {
     bot.process?.kill()
-  })
+  }
+}
 
-  ctx.using(['console.bots'], (ctx) => {
-    ctx.console.bots.extend((bot) => ({
-      qrcode: bot.qrcode,
-    }))
+namespace Launcher {
+  export interface Config {
+    root?: string
+    template?: string
+    logLevel?: number
+  }
 
-    ctx.console.addEntry({
-      dev: resolve(__dirname, '../client/index.ts'),
-      prod: resolve(__dirname, '../dist'),
-    })
+  export const Config: Schema<Config> = Schema.object({
+    root: Schema.string().description('存放账户文件的目录。').default('accounts'),
+    logLevel: Schema.number().description('输出日志等级。').default(3),
   })
 }
+
+export default Launcher
