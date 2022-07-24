@@ -5,7 +5,7 @@ import {} from 'koishi-plugin-gocqhttp'
 
 export default defineExtension((ctx) => {
   ctx.slot({
-    type: 'manager:settings',
+    type: 'market-settings',
     component: Settings,
   })
 })

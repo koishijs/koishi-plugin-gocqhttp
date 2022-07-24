@@ -1,10 +1,13 @@
 <template>
   <template v-if="data">
-    <k-comment class="qrcode" type="warning">
+    <k-comment v-if="data.qrcode" class="qrcode" type="warning">
       请使用手机登录 QQ 扫描二维码：
       <template #body>
         <img :src="data.qrcode"/>
       </template>
+    </k-comment>
+    <k-comment v-else type="success">
+      已成功绑定 go-cqhttp 子进程。
     </k-comment>
   </template>
 </template>

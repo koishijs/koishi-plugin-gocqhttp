@@ -5,7 +5,6 @@ import { spawn } from 'cross-spawn'
 import { ChildProcess } from 'child_process'
 import { resolve } from 'path'
 import { promises as fsp } from 'fs'
-import { URL } from 'url'
 import strip from 'strip-ansi'
 import { DataService } from '@koishijs/plugin-console'
 
@@ -48,6 +47,7 @@ const logLevelMap = {
 
 class Launcher extends DataService<Dict<Data>> {
   data: Dict<Data> = Object.create(null)
+  templateTask: Promise<string>
 
   constructor(ctx: Context, private config: Launcher.Config) {
     super(ctx, 'gocqhttp')
@@ -71,6 +71,26 @@ class Launcher extends DataService<Dict<Data>> {
     })
   }
 
+  private async getTemplate() {
+    const filename = this.config.template
+      ? resolve(this.ctx.baseDir, this.config.template)
+      : resolve(__dirname, '../template.yml')
+    return readFile(filename, 'utf8')
+  }
+
+  private async getConfig(bot: OneBotBot<Context>) {
+    const template = await (this.templateTask ||= this.getTemplate())
+    const config = { ...bot.config }
+    if ('endpoint' in config) {
+      config.endpoint = `0.0.0.0:${new URL(config.endpoint).port}`
+    }
+    if ('path' in config) {
+      const { port, host = 'localhost' } = bot.ctx.options
+      config['selfUrl'] = `${host}:${port}${config.path}`
+    }
+    return interpolate(template, config, /\$\{\{(.+?)\}\}/g)
+  }
+
   async get() {
     return this.data
   }
@@ -83,16 +103,7 @@ class Launcher extends DataService<Dict<Data>> {
     await copyFile(resolve(__dirname, '../bin/go-cqhttp'), cwd + file)
 
     // create config.yml
-    const { port, host = 'localhost' } = bot.ctx.options
-    const { endpoint, path = '/onebot' } = bot.config as any
-    const template = await readFile(this.config.template
-      ? resolve(bot.ctx.baseDir, this.config.template)
-      : resolve(__dirname, '../template/config.yml'), 'utf8')
-    await writeFile(cwd + '/config.yml', interpolate(template, {
-      bot: bot.config,
-      endpoint: endpoint && new URL(endpoint),
-      selfUrl: `${host}:${port}${path}`,
-    }, /\$\{\{(.+?)\}\}/g))
+    await writeFile(cwd + '/config.yml', await this.getConfig(bot))
 
     // spawn go-cqhttp process
     bot.process = spawn('.' + file, ['-faststart'], { cwd })
@@ -117,7 +128,7 @@ class Launcher extends DataService<Dict<Data>> {
             this.refresh()
           } else if (text.includes('アトリは、高性能ですから')) {
             resolve()
-            delete this.data[bot.sid]
+            this.data[bot.sid] = {}
             this.refresh()
           }
         }

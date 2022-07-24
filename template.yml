@@ -1,25 +1,33 @@
 # go-cqhttp 默认配置文件
+# https://github.com/Mrs4s/go-cqhttp/blob/177ba9d8c2b1d86301f0bf3e0714710fe3c40af4/modules/config/default_config.yml
 
-account: # 账号相关
+# 账号相关
+account:
   # QQ账号
-  uin: ${{ bot.selfId }}
+  uin: ${{ selfId }}
   # 密码为空时使用扫码登录
-  password: '${{ bot.password }}'
+  password: '${{ password }}'
   # 是否开启密码加密
   encrypt: false
+  # 在线状态 请参考 https://docs.go-cqhttp.org/guide/config.html#在线状态
+  status: 0
 
-  relogin:                      # 重连设置
-    disabled: false
-    delay: 3                    # 重连延迟, 单位秒
-    interval: 0                 # 重连间隔
-    max-times: 0                # 最大重连次数, 0为无限制
+  # 重连设置
+  relogin:
+    # 首次重连延迟, 单位秒
+    delay: 3
+    # 重连间隔
+    interval: 3
+    # 最大重连次数, 0为无限制
+    max-times: 0
 
   # 是否使用服务器下发的新地址进行重连
   # 注意, 此设置可能导致在海外服务器上连接情况更差
   use-sso-address: true
+  # 是否允许发送临时会话消息
+  allow-temp-session: false
 
 heartbeat:
-  disabled: false # 是否开启心跳事件上报
   # 心跳频率, 单位秒
   # -1 为关闭心跳
   interval: 5
@@ -44,17 +52,25 @@ message:
   remove-reply-at: false
   # 为Reply附加更多信息
   extra-reply-data: false
+  # 跳过 Mime 扫描, 忽略错误数据
+  skip-mime-scan: false
 
 output:
   # 日志等级 trace,debug,info,warn,error
   log-level: warn
-  # 是否启用 DEBUG
-  debug: false # 开启调试模式
+  # 日志时效 单位天. 超过这个时间之前的日志将会被自动删除. 设置为 0 表示永久保留.
+  log-aging: 15
+  # 是否在每次启动时强制创建全新的文件储存日志. 为 false 的情况下将会在上次启动时创建的日志文件续写
+  log-force-new: true
+  # 是否启用日志颜色
+  log-colorful: true
+  # 是否启用调试模式
+  debug: false
 
 # 默认中间件锚点
 default-middlewares: &default
   # 访问密钥, 强烈推荐在公网的服务器设置
-  access-token: '${{ bot.token }}'
+  access-token: '${{ token }}'
   # 事件过滤器文件目录
   filter: ''
   # API限速设置
@@ -67,54 +83,69 @@ default-middlewares: &default
     frequency: 1  # 令牌回复频率, 单位秒
     bucket: 1     # 令牌桶大小
 
-servers:
-  # HTTP 通信设置
-  - http:
-      # 是否关闭正向HTTP服务器
-      disabled: ${{ bot.protocol !== "http" }}
-      # 服务端监听地址
-      host: ${{ endpoint.hostname }}
-      # 服务端监听端口
-      port: ${{ endpoint.port }}
-      # 反向HTTP超时时间, 单位秒
-      # 最小值为5，小于5将会忽略本项设置
-      timeout: 5
-      middlewares:
-        <<: *default # 引用默认中间件
-      # 反向HTTP POST地址列表
-      post:
-        - url: http://${{ selfUrl }}
-          secret: '${{ bot.secret }}'
-
-  # 正向WS设置
-  - ws:
-      # 是否禁用正向WS服务器
-      disabled: ${{ bot.protocol !== "ws" }}
-      # 正向WS服务器监听地址
-      host: ${{ endpoint.hostname }}
-      # 正向WS服务器监听端口
-      port: ${{ endpoint.port }}
-      middlewares:
-        <<: *default # 引用默认中间件
-
-  - ws-reverse:
-      # 是否禁用当前反向WS服务
-      disabled: ${{ bot.protocol !== "ws-reverse" }}
-      # 反向WS Universal 地址
-      universal: ws://${{ selfUrl }}
-      # 重连间隔 单位毫秒
-      reconnect-interval: 3000
-      middlewares:
-        <<: *default # 引用默认中间件
-
-  # 可添加更多
-  #- ws-reverse:
-  #- ws:
-  #- http:
-
-database: # 数据库相关设置
+# 数据库相关设置
+database:
   leveldb:
     # 是否启用内置leveldb数据库
     # 启用将会增加10-20MB的内存占用和一定的磁盘空间
     # 关闭将无法使用 撤回 回复 get_msg 等上下文相关功能
     enable: true
+
+  # 媒体文件缓存， 删除此项则使用缓存文件(旧版行为)
+  cache:
+    image: data/image.db
+    video: data/video.db
+
+servers:
+  # HTTP 通信设置
+  # https://github.com/Mrs4s/go-cqhttp/blob/177ba9d8c2b1d86301f0bf3e0714710fe3c40af4/server/http.go#L82
+  - http:
+      # 是否关闭正向HTTP服务器
+      disabled: ${{ protocol !== "http" }}
+      # HTTP监听地址
+      address: ${{ endpoint }}
+      # 反向HTTP超时时间, 单位秒
+      # 最小值为5，小于5将会忽略本项设置
+      timeout: 5
+      # 长轮询拓展
+      long-polling:
+        enabled: false
+        # 消息队列大小，0 表示不限制队列大小，谨慎使用
+        max-queue-size: 2000
+      middlewares:
+        <<: *default # 引用默认中间件
+      # 反向HTTP POST地址列表
+      post:
+        - url: http://${{ selfUrl }}
+          secret: '${{ secret }}'
+          # 最大重试，0 时禁用
+          # max-retries: 3
+          # 重试时间，单位毫秒，0 时立即
+          # retries-interval: 1500
+
+  # 正向WS设置
+  # https://github.com/Mrs4s/go-cqhttp/blob/177ba9d8c2b1d86301f0bf3e0714710fe3c40af4/server/websocket.go#L79
+  - ws:
+      # 是否禁用正向WS服务器
+      disabled: ${{ protocol !== "ws" }}
+      # 正向WS服务器监听地址
+      address: ${{ endpoint }}
+      middlewares:
+        <<: *default # 引用默认中间件
+
+  # 反向WS设置
+  # https://github.com/Mrs4s/go-cqhttp/blob/177ba9d8c2b1d86301f0bf3e0714710fe3c40af4/server/websocket.go#L87
+  - ws-reverse:
+      # 是否禁用当前反向WS服务
+      disabled: ${{ protocol !== "ws-reverse" }}
+      # 反向WS Universal 地址
+      # 注意 设置了此项地址后下面两项将会被忽略
+      universal: ws://${{ selfUrl }}
+      # 反向WS API 地址
+      # api: ws://your_websocket_api.server
+      # 反向WS Event 地址
+      # event: ws://your_websocket_event.server
+      # 重连间隔 单位毫秒
+      reconnect-interval: 3000
+      middlewares:
+        <<: *default # 引用默认中间件
