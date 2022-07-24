@@ -16,6 +16,10 @@ declare module '@koishijs/plugin-console' {
       gocqhttp: Launcher
     }
   }
+
+  interface Events {
+    'gocqhttp/write'(sid: string, text: string): void
+  }
 }
 
 declare module '@satorijs/adapter-onebot/lib/bot' {
@@ -45,20 +49,27 @@ const logLevelMap = {
   FATAL: 'error',
 }
 
-namespace GoCqhttp {
+namespace Data {
   export type Status =
     | 'success'
     | 'init'
+    | 'sms'
+    | 'qrcode'
+    | 'slider'
+    | 'captcha'
+    | 'sms-confirm'
     | 'sms-or-qrcode'
+    | 'slider-or-qrcode'
 }
 
-interface GoCqhttp {
-  status: GoCqhttp.Status
-  qrcode?: string
+interface Data {
+  status: Data.Status
+  image?: string
+  phone?: string
 }
 
-class Launcher extends DataService<Dict<GoCqhttp>> {
-  data: Dict<GoCqhttp> = Object.create(null)
+class Launcher extends DataService<Dict<Data>> {
+  payload: Dict<Data> = Object.create(null)
   templateTask: Promise<string>
 
   constructor(ctx: Context, private config: Launcher.Config) {
@@ -80,6 +91,15 @@ class Launcher extends DataService<Dict<GoCqhttp>> {
       ctx.console.addEntry({
         dev: resolve(__dirname, '../client/index.ts'),
         prod: resolve(__dirname, '../dist'),
+      })
+    })
+
+    ctx.console.addListener('gocqhttp/write', (sid, text) => {
+      const bot = ctx.bots[sid] as OneBotBot<Context>
+      return new Promise<void>((resolve, reject) => {
+        bot.process.stdin.write(text + '\n', (error) => {
+          error ? reject(error) : resolve()
+        })
       })
     })
   }
@@ -109,7 +129,12 @@ class Launcher extends DataService<Dict<GoCqhttp>> {
   }
 
   async get() {
-    return this.data
+    return this.payload
+  }
+
+  private setData(bot: OneBotBot<Context>, data: Data, skip = false) {
+    this.payload[bot.sid] = data
+    if (!skip) this.refresh()
   }
 
   async connect(bot: OneBotBot<Context>) {
@@ -123,13 +148,12 @@ class Launcher extends DataService<Dict<GoCqhttp>> {
     await writeFile(cwd + '/config.yml', await this.getConfig(bot))
 
     return new Promise<void>((resolve, reject) => {
-      this.data[bot.sid] = { status: 'init' }
-      this.refresh()
+      this.setData(bot, { status: 'init' })
 
       // spawn go-cqhttp process
       bot.process = spawn('.' + file, ['-faststart'], { cwd })
 
-      bot.process.stdout.on('data', async (data) => {
+      bot.process.stdout.on('data', async (data: string) => {
         data = strip(data.toString()).trim()
         if (!data) return
         for (const line of data.trim().split('\n')) {
@@ -140,19 +164,41 @@ class Launcher extends DataService<Dict<GoCqhttp>> {
           } else {
             logger.info(line.trim())
           }
+          let cap: RegExpMatchArray
           if (text.includes('アトリは、高性能ですから')) {
             resolve()
-            this.data[bot.sid] = {
-              status: 'success',
-            }
+            this.setData(bot, { status: 'success' })
+          } else if (text.includes('将在10秒后自动选择')) {
             this.refresh()
+          } else if (text.includes('账号已开启设备锁，请选择验证方式')) {
+            this.payload[bot.status] = { status: 'sms-or-qrcode' }
+          } else if (text.includes('登录需要滑条验证码, 请选择验证方式')) {
+            this.payload[bot.status] = { status: 'slider-or-qrcode' }
+            // eslint-disable-next-line no-cond-assign
+          } else if (cap = text.match(/向手机(.+)发送短信验证码/)) {
+            const phone = cap[1].trim()
+            if (text.includes('账号已开启设备锁')) {
+              this.setData(bot, { status: 'sms-confirm', phone })
+            } else {
+              this.payload[bot.status].phone = phone
+            }
+          } else if (text.includes('captcha.jpg')) {
+            const buffer = await fsp.readFile(cwd + '/captcha.png')
+            this.setData(bot, {
+              status: 'captcha',
+              image: 'data:image/png;base64,' + buffer.toString('base64'),
+            })
           } else if (text.includes('qrcode.png')) {
             const buffer = await fsp.readFile(cwd + '/qrcode.png')
-            this.data[bot.sid] = {
-              status: 'sms-or-qrcode',
-              qrcode: 'data:image/png;base64,' + buffer.toString('base64'),
-            }
+            this.setData(bot, {
+              status: 'qrcode',
+              image: 'data:image/png;base64,' + buffer.toString('base64'),
+            })
+          } else if (text.includes('请输入短信验证码')) {
+            this.payload[bot.status].status = 'sms'
             this.refresh()
+          } else if (text.includes('请前往该地址验证')) {
+            this.setData(bot, { status: 'slider' })
           }
         }
       })
@@ -170,6 +216,8 @@ class Launcher extends DataService<Dict<GoCqhttp>> {
 
   async disconnect(bot: OneBotBot<Context>) {
     bot.process?.kill()
+    bot.process = null
+    this.setData(bot, null)
   }
 }
 
