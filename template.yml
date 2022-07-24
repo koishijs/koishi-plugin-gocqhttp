@@ -36,24 +36,7 @@ message:
   # 上报数据类型
   # 可选: string, array
   post-format: string
-  # 是否忽略无效的CQ码, 如果为假将原样发送
-  ignore-invalid-cqcode: false
-  # 是否强制分片发送消息
-  # 分片发送将会带来更快的速度
-  # 但是兼容性会有些问题
-  force-fragment: false
-  # 是否将url分片发送
-  fix-url: false
-  # 下载图片等请求网络代理
-  proxy-rewrite: ''
-  # 是否上报自身消息
-  report-self-message: false
-  # 移除服务端的Reply附带的At
-  remove-reply-at: false
-  # 为Reply附加更多信息
-  extra-reply-data: false
-  # 跳过 Mime 扫描, 忽略错误数据
-  skip-mime-scan: false
+  <<: ${{ message }}
 
 output:
   # 日志等级 trace,debug,info,warn,error

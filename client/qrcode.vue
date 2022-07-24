@@ -7,24 +7,35 @@
       </template>
     </k-comment>
     <k-comment v-else type="success">
-      已成功绑定 go-cqhttp 子进程。
+      已成功创建 go-cqhttp 子进程。
     </k-comment>
   </template>
+  <k-form v-if="isOneBot" v-model="config" :initial="current.config" :schema="schema"></k-form>
 </template>
 
 <script lang="ts" setup>
 
 import { inject, computed } from 'vue'
 import {} from 'koishi-plugin-gocqhttp'
-import { store } from '@koishijs/client'
+import { Schema, store } from '@koishijs/client'
 
 const local: any = inject('manager.local')
 const config: any = inject('manager.config')
+const current: any = inject('manager.current')
+
+const isOneBot = computed(() => local.value.name === '@koishijs/plugin-adapter-onebot')
 
 const data = computed(() => {
-  if (local.value.name !== '@koishijs/plugin-adapter-onebot') return
+  if (!isOneBot.value) return
   const sid = `${config.value.platform || 'onebot'}:${config.value.selfId}`
   return store.gocqhttp?.[sid]
+})
+
+const schema = Schema.object({
+  gocqhttp: Schema.object({
+    enabled: Schema.boolean().default(false).description('是否自动创建 go-cqhttp 子进程。'),
+    password: Schema.string().role('secret').description('机器人的密码。'),
+  }).description('go-cqhttp 基础设置'),
 })
 
 </script>
