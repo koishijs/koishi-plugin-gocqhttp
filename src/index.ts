@@ -77,7 +77,6 @@ class Launcher extends DataService<Dict<Data>> {
     logger.level = config.logLevel || 3
 
     ctx.on('bot-connect', async (bot: OneBotBot<Context>) => {
-      console.log(bot.config)
       if (!bot.config.gocqhttp?.enabled) return
       return this.connect(bot)
     })

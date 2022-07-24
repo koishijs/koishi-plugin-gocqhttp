@@ -1,19 +1,21 @@
 const { existsSync } = require('fs')
 
-async function install() {
-  const {
-    downloadRelease,
-    getLatestRelease,
-  } = require('./lib/install')
+/** @type {import('./lib/install')} */
+let utils
 
+try {
+  utils = require('./lib/install')
+} catch {}
+
+async function install() {
   let version = process.env.GOCQHTTP_VERSION || 'v1.0.0-rc3'
   if (version === 'latest') {
-    version = await getLatestRelease()
+    version = await utils.getLatestRelease()
   }
 
-  await downloadRelease(version)
+  await utils.downloadRelease(version)
 }
 
-if (!existsSync(__dirname + '/bin')) {
+if (utils && !existsSync(__dirname + '/bin')) {
   install()
 }

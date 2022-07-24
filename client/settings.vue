@@ -56,9 +56,9 @@ import { inject, computed, ref } from 'vue'
 import {} from 'koishi-plugin-gocqhttp'
 import { Schema, store, send } from '@koishijs/client'
 
-const local: any = inject('manager.local')
-const config: any = inject('manager.config')
-const current: any = inject('manager.current')
+const local: any = inject('manager.settings.local')
+const config: any = inject('manager.settings.config')
+const current: any = inject('manager.settings.current')
 
 const text = ref('')
 
