@@ -8,7 +8,7 @@
     </p>
     <template v-else-if="data.status === 'qrcode'">
       <p>请使用手机登录 QQ 扫描二维码：</p>
-      <img :src="data.image"/>
+      <img class="qrcode" :src="data.image"/>
     </template>
     <template v-else-if="data.status === 'captcha'">
       <p>请填写图中的内容：</p>
@@ -44,6 +44,9 @@
         <k-button disabled @click="send('gocqhttp/write', sid, '1')">1. 使用浏览器抓取滑条并登录 (暂不支持)</k-button>
         <k-button @click="send('gocqhttp/write', sid, '2')">2. 使用手机登录 QQ 并扫码验证 (需要手机和 Koishi 在同一网络下)</k-button>
       </div>
+    </template>
+    <template v-else-if="data.status === 'slider'">
+      <p>账号已开启设备锁。请点击<a :href="data.link" target="_blank">此链接</a>验证后重启 Bot。</p>
     </template>
   </k-comment>
 
@@ -93,6 +96,11 @@ const schema = Schema.object({
   img {
     display: block;
     margin: 1rem 0;
+  }
+
+  .qrcode {
+    width: 200px;
+    image-rendering: pixelated;
   }
 
   .submit {

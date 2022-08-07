@@ -8,6 +8,7 @@ type Release = components['schemas']['release']
 
 function getArch() {
   switch (process.arch) {
+    // @ts-ignore
     case 'x32': return '386'
     case 'x64': return 'amd64'
     case 'arm64': return 'arm64'

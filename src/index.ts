@@ -163,6 +163,7 @@ class Launcher extends DataService<Dict<Data>> {
           } else {
             logger.info(line.trim())
           }
+
           let cap: RegExpMatchArray
           if (text.includes('アトリは、高性能ですから')) {
             resolve()
@@ -197,7 +198,10 @@ class Launcher extends DataService<Dict<Data>> {
             this.payload[bot.status].status = 'sms'
             this.refresh()
           } else if (text.includes('请前往该地址验证')) {
-            this.setData(bot, { status: 'slider' })
+            this.setData(bot, {
+              status: 'slider',
+              link: text.match(/https:\S+/)[0],
+            })
           }
         }
       })
