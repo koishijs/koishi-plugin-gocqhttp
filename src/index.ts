@@ -72,7 +72,7 @@ class Launcher extends DataService<Dict<Data>> {
   templateTask: Promise<string>
 
   constructor(ctx: Context, private config: Launcher.Config) {
-    super(ctx, 'gocqhttp')
+    super(ctx, 'gocqhttp', { authority: 4 })
     logger.level = config.logLevel || 3
 
     ctx.on('bot-connect', async (bot: OneBotBot<Context>) => {
@@ -85,18 +85,18 @@ class Launcher extends DataService<Dict<Data>> {
       return this.disconnect(bot)
     })
 
-    ctx.using(['console.config'], (ctx) => {
+    ctx.using(['console'], (ctx) => {
       ctx.console.addEntry({
         dev: resolve(__dirname, '../client/index.ts'),
         prod: resolve(__dirname, '../dist'),
       })
-    })
 
-    ctx.console.addListener('gocqhttp/write', (sid, text) => {
-      const bot = ctx.bots[sid] as OneBotBot<Context>
-      return new Promise<void>((resolve, reject) => {
-        bot.process.stdin.write(text + '\n', (error) => {
-          error ? reject(error) : resolve()
+      ctx.console.addListener('gocqhttp/write', (sid, text) => {
+        const bot = ctx.bots[sid] as OneBotBot<Context>
+        return new Promise<void>((resolve, reject) => {
+          bot.process.stdin.write(text + '\n', (error) => {
+            error ? reject(error) : resolve()
+          })
         })
       })
     })
