@@ -2,10 +2,9 @@ import { Context, Dict, interpolate, Logger, Schema } from 'koishi'
 import OneBotBot from '@koishijs/plugin-adapter-onebot'
 import { DataService } from '@koishijs/plugin-console'
 import {} from '@koishijs/plugin-market'
-import { spawn } from 'cross-spawn'
-import { ChildProcess } from 'child_process'
+import { ChildProcess, spawn } from 'child_process'
 import { resolve } from 'path'
-import { promises as fsp } from 'fs'
+import { createReadStream, promises as fsp } from 'fs'
 import strip from 'strip-ansi'
 
 const { mkdir, copyFile, readFile, writeFile } = fsp
@@ -131,9 +130,9 @@ class Launcher extends DataService<Dict<Data>> {
     return this.payload
   }
 
-  private setData(bot: OneBotBot<Context>, data: Data, skip = false) {
+  private setData(bot: OneBotBot<Context>, data: Data) {
     this.payload[bot.sid] = data
-    if (!skip) this.refresh()
+    this.refresh()
   }
 
   async connect(bot: OneBotBot<Context>) {
@@ -170,17 +169,17 @@ class Launcher extends DataService<Dict<Data>> {
             this.setData(bot, { status: 'success' })
           } else if (text.includes('将在10秒后自动选择')) {
             this.refresh()
-          } else if (text.includes('账号已开启设备锁，请选择验证方式')) {
-            this.payload[bot.status] = { status: 'sms-or-qrcode' }
-          } else if (text.includes('登录需要滑条验证码, 请选择验证方式')) {
-            this.payload[bot.status] = { status: 'slider-or-qrcode' }
+          } else if (text.includes('账号已开启设备锁') && text.includes('请选择验证方式')) {
+            this.payload[bot.sid] = { status: 'sms-or-qrcode' }
+          } else if (text.includes('登录需要滑条验证码') && text.includes('请选择验证方式')) {
+            this.payload[bot.sid] = { status: 'slider-or-qrcode' }
             // eslint-disable-next-line no-cond-assign
           } else if (cap = text.match(/向手机(.+)发送短信验证码/)) {
             const phone = cap[1].trim()
             if (text.includes('账号已开启设备锁')) {
               this.setData(bot, { status: 'sms-confirm', phone })
             } else {
-              this.payload[bot.status].phone = phone
+              this.payload[bot.sid].phone = phone
             }
           } else if (text.includes('captcha.jpg')) {
             const buffer = await fsp.readFile(cwd + '/captcha.png')
@@ -195,7 +194,7 @@ class Launcher extends DataService<Dict<Data>> {
               image: 'data:image/png;base64,' + buffer.toString('base64'),
             })
           } else if (text.includes('请输入短信验证码')) {
-            this.payload[bot.status].status = 'sms'
+            this.payload[bot.sid].status = 'sms'
             this.refresh()
           } else if (text.includes('请前往该地址验证')) {
             this.setData(bot, {
