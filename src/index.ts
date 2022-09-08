@@ -2,12 +2,13 @@ import { Context, Dict, interpolate, Logger, Schema } from 'koishi'
 import OneBotBot from '@koishijs/plugin-adapter-onebot'
 import { DataService } from '@koishijs/plugin-console'
 import {} from '@koishijs/plugin-market'
-import { ChildProcess, spawn } from 'child_process'
+import { ChildProcess } from 'child_process'
 import { resolve } from 'path'
 import { createReadStream, promises as fsp } from 'fs'
+import gocqhttp from 'go-cqhttp'
 import strip from 'strip-ansi'
 
-const { mkdir, copyFile, readFile, writeFile } = fsp
+const { mkdir, readFile, writeFile } = fsp
 
 declare module '@koishijs/plugin-console' {
   namespace Console {
@@ -138,9 +139,7 @@ class Launcher extends DataService<Dict<Data>> {
   async connect(bot: OneBotBot<Context>) {
     // create working folder
     const cwd = resolve(bot.ctx.baseDir, this.config.root, bot.selfId)
-    const file = '/go-cqhttp' + (process.platform === 'win32' ? '.exe' : '')
     await mkdir(cwd, { recursive: true })
-    await copyFile(resolve(__dirname, '../bin/go-cqhttp'), cwd + file)
 
     // create config.yml
     await writeFile(cwd + '/config.yml', await this.getConfig(bot))
@@ -149,7 +148,7 @@ class Launcher extends DataService<Dict<Data>> {
       this.setData(bot, { status: 'init' })
 
       // spawn go-cqhttp process
-      bot.process = spawn('.' + file, ['-faststart'], { cwd })
+      bot.process = gocqhttp({ cwd, faststart: true })
 
       bot.process.stdout.on('data', async (data: string) => {
         data = strip(data.toString()).trim()
@@ -182,13 +181,13 @@ class Launcher extends DataService<Dict<Data>> {
               this.payload[bot.sid].phone = phone
             }
           } else if (text.includes('captcha.jpg')) {
-            const buffer = await fsp.readFile(cwd + '/captcha.png')
+            const buffer = await readFile(cwd + '/captcha.png')
             this.setData(bot, {
               status: 'captcha',
               image: 'data:image/png;base64,' + buffer.toString('base64'),
             })
           } else if (text.includes('qrcode.png')) {
-            const buffer = await fsp.readFile(cwd + '/qrcode.png')
+            const buffer = await readFile(cwd + '/qrcode.png')
             this.setData(bot, {
               status: 'qrcode',
               image: 'data:image/png;base64,' + buffer.toString('base64'),
