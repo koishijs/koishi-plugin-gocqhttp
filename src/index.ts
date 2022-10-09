@@ -121,7 +121,7 @@ class Launcher extends DataService<Dict<Data>> {
       config.endpoint = `0.0.0.0:${new URL(config.endpoint).port}`
     }
     if ('path' in config) {
-      const { port, host = 'localhost' } = bot.ctx.options
+      const { port, host = 'localhost' } = bot.ctx.root.config
       config['selfUrl'] = `${host}:${port}${config.path}`
     }
     return interpolate(template, config, /\$\{\{(.+?)\}\}/g)
