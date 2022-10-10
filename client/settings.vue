@@ -1,10 +1,13 @@
 <template>
   <k-comment class="gocqhttp" v-if="data" :type="type">
-    <p v-if="data.status === 'init'">
+    <p v-if="data.status === 'offline'">
+      未连接到 go-cqhttp 子进程。
+    </p>
+    <p v-else-if="data.status === 'init'">
       正在创建 go-cqhttp 子进程……
     </p>
     <p v-else-if="data.status === 'success'">
-      已成功创建 go-cqhttp 子进程。
+      已成功连接 go-cqhttp 子进程。
     </p>
     <template v-else-if="data.status === 'qrcode'">
       <p>请使用手机登录 QQ 扫描二维码：</p>
@@ -77,6 +80,7 @@ const data = computed(() => {
 const type = computed(() => {
   if (!data.value) return
   if (data.value.status === 'init') return
+  if (data.value.status === 'offline') return 'error'
   if (data.value.status === 'success') return 'success'
   return 'warning'
 })

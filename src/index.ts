@@ -51,6 +51,7 @@ const logLevelMap = {
 
 namespace Data {
   export type Status =
+    | 'offline'
     | 'success'
     | 'init'
     | 'sms'
@@ -66,6 +67,7 @@ interface Data {
   status: Data.Status
   image?: string
   phone?: string
+  link?: string
 }
 
 class Launcher extends DataService<Dict<Data>> {
@@ -205,7 +207,7 @@ class Launcher extends DataService<Dict<Data>> {
       })
 
       bot.process.on('exit', () => {
-        bot.process = null
+        bot.stop()
         reject(new Error())
       })
 
@@ -218,7 +220,7 @@ class Launcher extends DataService<Dict<Data>> {
   async disconnect(bot: OneBotBot<Context>) {
     bot.process?.kill()
     bot.process = null
-    this.setData(bot, null)
+    this.setData(bot, { status: 'offline' })
   }
 }
 
