@@ -70,7 +70,7 @@ const text = ref('')
 
 const sid = computed(() => {
   if (local.value.name !== '@koishijs/plugin-adapter-onebot') return
-  return `${config.value.platform || 'onebot'}:${config.value.selfId}`
+  return `${config.value?.platform || 'onebot'}:${config.value?.selfId}`
 })
 
 const data = computed(() => {

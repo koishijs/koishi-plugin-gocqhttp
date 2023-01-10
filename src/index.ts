@@ -78,12 +78,12 @@ class Launcher extends DataService<Dict<Data>> {
     super(ctx, 'gocqhttp', { authority: 4 })
     logger.level = config.logLevel || 3
 
-    ctx.on('bot-connect', async (bot: OneBotBot<Context>) => {
+    ctx.on('bot-connect', async (bot: OneBotBot) => {
       if (!bot.config.gocqhttp?.enabled) return
       return this.connect(bot)
     })
 
-    ctx.on('bot-disconnect', async (bot: OneBotBot<Context>) => {
+    ctx.on('bot-disconnect', async (bot: OneBotBot) => {
       if (!bot.config.gocqhttp?.enabled) return
       return this.disconnect(bot)
     })
@@ -95,7 +95,7 @@ class Launcher extends DataService<Dict<Data>> {
       })
 
       ctx.console.addListener('gocqhttp/write', (sid, text) => {
-        const bot = ctx.bots[sid] as OneBotBot<Context>
+        const bot = ctx.bots[sid] as OneBotBot
         return new Promise<void>((resolve, reject) => {
           bot.process.stdin.write(text + '\n', (error) => {
             error ? reject(error) : resolve()
@@ -112,7 +112,7 @@ class Launcher extends DataService<Dict<Data>> {
     return readFile(filename, 'utf8')
   }
 
-  private async getConfig(bot: OneBotBot<Context>) {
+  private async getConfig(bot: OneBotBot) {
     const template = await (this.templateTask ||= this.getTemplate())
     const config = {
       message: JSON.stringify(this.config.message),
@@ -133,12 +133,12 @@ class Launcher extends DataService<Dict<Data>> {
     return this.payload
   }
 
-  private setData(bot: OneBotBot<Context>, data: Data) {
+  private setData(bot: OneBotBot, data: Data) {
     this.payload[bot.sid] = data
     this.refresh()
   }
 
-  async connect(bot: OneBotBot<Context>) {
+  async connect(bot: OneBotBot) {
     // create working folder
     const cwd = resolve(bot.ctx.baseDir, this.config.root, bot.selfId)
     await mkdir(cwd, { recursive: true })
@@ -152,7 +152,7 @@ class Launcher extends DataService<Dict<Data>> {
       // spawn go-cqhttp process
       bot.process = gocqhttp({ cwd, faststart: true })
 
-      bot.process.stdout.on('data', async (data: string) => {
+      bot.process.stdout.on('data', async (data) => {
         data = strip(data.toString()).trim()
         if (!data) return
         for (const line of data.trim().split('\n')) {
@@ -217,7 +217,7 @@ class Launcher extends DataService<Dict<Data>> {
     })
   }
 
-  async disconnect(bot: OneBotBot<Context>) {
+  async disconnect(bot: OneBotBot) {
     bot.process?.kill()
     bot.process = null
     this.setData(bot, { status: 'offline' })
