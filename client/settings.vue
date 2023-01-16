@@ -35,16 +35,16 @@
       </div>
     </template>
     <template v-else-if="data.status === 'sms-or-qrcode'">
-      <p>账号已开启设备锁。请选择验证方式 (将在 10 秒后自动选择 2)：</p>
+      <p>账号已开启设备锁。请选择验证方式：</p>
       <div class="submit">
         <k-button @click="send('gocqhttp/write', sid, '1')">1. 向手机 {{ data.phone }} 发送短信验证码</k-button>
         <k-button @click="send('gocqhttp/write', sid, '2')">2. 使用手机登录 QQ 并扫码验证</k-button>
       </div>
     </template>
     <template v-else-if="data.status === 'slider-or-qrcode'">
-      <p>登录需要滑条验证码。请选择验证方式 (将在 10 秒后自动选择 1)：</p>
+      <p>登录需要滑条验证码。请选择验证方式：</p>
       <div class="submit">
-        <k-button disabled @click="send('gocqhttp/write', sid, '1')">1. 使用浏览器抓取滑条并登录 (暂不支持)</k-button>
+        <k-button @click="send('gocqhttp/write', sid, '1')">1. 使用浏览器抓取滑条并登录</k-button>
         <k-button @click="send('gocqhttp/write', sid, '2')">2. 使用手机登录 QQ 并扫码验证 (需要手机和 Koishi 在同一网络下)</k-button>
       </div>
     </template>

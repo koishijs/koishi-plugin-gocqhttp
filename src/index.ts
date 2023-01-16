@@ -95,12 +95,31 @@ class Launcher extends DataService<Dict<Data>> {
       })
 
       ctx.console.addListener('gocqhttp/write', (sid, text) => {
-        const bot = ctx.bots[sid] as OneBotBot
-        return new Promise<void>((resolve, reject) => {
-          bot.process.stdin.write(text + '\n', (error) => {
-            error ? reject(error) : resolve()
-          })
-        })
+        return this.write(sid, text)
+      })
+    })
+
+    ctx.router.get('/gocqhttp/captcha', (ctx, next) => {
+      ctx.type = '.html'
+      ctx.body = createReadStream(resolve(__dirname, '../captcha.html'))
+    })
+
+    ctx.router.post('/gocqhttp/ticket', (ctx, next) => {
+      if (!ctx.query.id || !ctx.query.ticket) return ctx.status = 400
+      const sid = ctx.query.id.toString()
+      const ticket = ctx.query.ticket.toString()
+      const bot = this.ctx.bots[sid] as OneBotBot
+      if (!bot) return ctx.status = 404
+      ctx.status = 200
+      return this.write(sid, ticket)
+    })
+  }
+
+  private async write(sid: string, text: string) {
+    const bot = this.ctx.bots[sid] as OneBotBot
+    return new Promise<void>((resolve, reject) => {
+      bot.process.stdin.write(text + '\n', (error) => {
+        error ? reject(error) : resolve()
       })
     })
   }
@@ -156,7 +175,7 @@ class Launcher extends DataService<Dict<Data>> {
         data = strip(data.toString()).trim()
         if (!data) return
         for (const line of data.trim().split('\n')) {
-          const text = line.slice(23)
+          const text: string = line.slice(23)
           const [type] = text.split(']: ', 1)
           if (type in logLevelMap) {
             logger[logLevelMap[type]](text.slice(type.length + 3))
@@ -168,7 +187,7 @@ class Launcher extends DataService<Dict<Data>> {
           if (text.includes('アトリは、高性能ですから')) {
             resolve()
             this.setData(bot, { status: 'success' })
-          } else if (text.includes('将在10秒后自动选择')) {
+          } else if (text.includes('请输入(1 - 2)')) {
             this.refresh()
           } else if (text.includes('账号已开启设备锁') && text.includes('请选择验证方式')) {
             this.payload[bot.sid] = { status: 'sms-or-qrcode' }
@@ -200,9 +219,23 @@ class Launcher extends DataService<Dict<Data>> {
           } else if (text.includes('请前往该地址验证')) {
             this.setData(bot, {
               status: 'slider',
-              link: text.match(/https:\S+/)[0],
+              link: text
+                .match(/https:\S+/)[0]
+                .replace(/^https:\/\/captcha\.go-cqhttp\.org\/captcha\?id=(.+?)&/, `/gocqhttp/captcha?id=${bot.sid}&`),
             })
           }
+        }
+      })
+
+      bot.process.on('error', (error) => {
+        logger.warn(error)
+      })
+
+      bot.process.stderr.on('data', async (data) => {
+        data = strip(data.toString()).trim()
+        if (!data) return
+        for (const line of data.split('\n')) {
+          logger.warn(line.trim())
         }
       })
 
@@ -225,6 +258,8 @@ class Launcher extends DataService<Dict<Data>> {
 }
 
 namespace Launcher {
+  export const filter = false
+
   export interface Config {
     root?: string
     logLevel?: number

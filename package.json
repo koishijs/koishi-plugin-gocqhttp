@@ -7,6 +7,7 @@
   "files": [
     "lib",
     "dist",
+    "captcha.html",
     "install.js",
     "template.yml"
   ],
@@ -63,7 +64,7 @@
   },
   "dependencies": {
     "@koishijs/utils": "6.4.0",
-    "go-cqhttp": "^1.1.6",
+    "go-cqhttp": "^2.1.0",
     "strip-ansi": "^6.0.1"
   }
 }
