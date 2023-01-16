@@ -54,9 +54,9 @@
     "koishi": "^4.11.2"
   },
   "devDependencies": {
-    "@koishijs/client": "^5.1.8",
+    "@koishijs/client": "^5.1.10",
     "@koishijs/plugin-adapter-onebot": "^5.5.4",
-    "@koishijs/plugin-console": "^5.1.8",
+    "@koishijs/plugin-console": "^5.1.10",
     "@koishijs/plugin-market": "^1.8.10",
     "@types/node": "^18.11.17",
     "koishi": "^4.11.2",
@@ -64,7 +64,7 @@
   },
   "dependencies": {
     "@koishijs/utils": "6.4.0",
-    "go-cqhttp": "^2.1.0",
+    "go-cqhttp": "^2.1.1",
     "strip-ansi": "^6.0.1"
   }
 }

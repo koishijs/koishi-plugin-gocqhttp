@@ -19,6 +19,8 @@ declare module '@koishijs/plugin-console' {
 
   interface Events {
     'gocqhttp/write'(sid: string, text: string): void
+    'gocqhttp/start'(sid: string): void
+    'gocqhttp/stop'(sid: string): void
   }
 }
 
@@ -51,6 +53,7 @@ const logLevelMap = {
 
 namespace Data {
   export type Status =
+    | 'error'
     | 'offline'
     | 'success'
     | 'init'
@@ -68,6 +71,7 @@ interface Data {
   image?: string
   phone?: string
   link?: string
+  message?: string
 }
 
 class Launcher extends DataService<Dict<Data>> {
@@ -96,7 +100,19 @@ class Launcher extends DataService<Dict<Data>> {
 
       ctx.console.addListener('gocqhttp/write', (sid, text) => {
         return this.write(sid, text)
-      })
+      }, { authority: 4 })
+
+      ctx.console.addListener('gocqhttp/start', (sid) => {
+        const bot = this.ctx.bots[sid] as OneBotBot
+        if (!bot) return
+        return this.connect(bot)
+      }, { authority: 4 })
+
+      ctx.console.addListener('gocqhttp/stop', (sid) => {
+        const bot = this.ctx.bots[sid] as OneBotBot
+        if (!bot) return
+        return this.disconnect(bot)
+      }, { authority: 4 })
     })
 
     ctx.router.get('/gocqhttp/captcha', (ctx, next) => {
@@ -169,7 +185,7 @@ class Launcher extends DataService<Dict<Data>> {
       this.setData(bot, { status: 'init' })
 
       // spawn go-cqhttp process
-      bot.process = gocqhttp({ cwd, faststart: true })
+      bot.process = gocqhttp({ cwd })
 
       bot.process.stdout.on('data', async (data) => {
         data = strip(data.toString()).trim()
@@ -193,8 +209,7 @@ class Launcher extends DataService<Dict<Data>> {
             this.payload[bot.sid] = { status: 'sms-or-qrcode' }
           } else if (text.includes('登录需要滑条验证码') && text.includes('请选择验证方式')) {
             this.payload[bot.sid] = { status: 'slider-or-qrcode' }
-            // eslint-disable-next-line no-cond-assign
-          } else if (cap = text.match(/向手机(.+)发送短信验证码/)) {
+          } else if ((cap = text.match(/向手机 (.+?) 发送短信验证码/))) {
             const phone = cap[1].trim()
             if (text.includes('账号已开启设备锁')) {
               this.setData(bot, { status: 'sms-confirm', phone })
@@ -223,6 +238,39 @@ class Launcher extends DataService<Dict<Data>> {
                 .match(/https:\S+/)[0]
                 .replace(/^https:\/\/captcha\.go-cqhttp\.org\/captcha\?id=(.+?)&/, `/gocqhttp/captcha?id=${bot.sid}&`),
             })
+          } else if (text.includes('扫码被用户取消')) {
+            this.payload[bot.sid].message = '扫码被用户取消。'
+            this.refresh()
+          } else if (text.includes('二维码过期')) {
+            this.payload[bot.sid].message = '二维码已过期。'
+            this.refresh()
+          } else if (text.includes('扫码成功')) {
+            this.payload[bot.sid].message = '扫码成功，请在手机端确认登录。'
+            this.refresh()
+          } else if (text.includes('发送验证码失败')) {
+            this.setData(bot, {
+              status: 'error',
+              message: '发送验证码失败，可能是请求过于频繁。',
+            })
+          } else if (text.includes('密码错误或账号被冻结')) {
+            this.setData(bot, {
+              status: 'error',
+              message: '登录失败：密码错误或账号被冻结。',
+            })
+            this.write(bot.sid, '')
+          } else if (text.includes('账号被冻结')) {
+            this.setData(bot, {
+              status: 'error',
+              message: '登录失败：账号被冻结。',
+            })
+            this.write(bot.sid, '')
+          } else if (text.includes('账号已开启设备锁') && (cap = text.match(/-> (.+?) <-/))) {
+            this.setData(bot, {
+              status: 'error',
+              message: '账号已开启设备锁，请前往验证后点击重启。',
+              link: cap[1],
+            })
+            this.write(bot.sid, '')
           }
         }
       })
@@ -240,7 +288,6 @@ class Launcher extends DataService<Dict<Data>> {
       })
 
       bot.process.on('exit', () => {
-        bot.stop()
         reject(new Error())
       })
 
@@ -253,6 +300,7 @@ class Launcher extends DataService<Dict<Data>> {
   async disconnect(bot: OneBotBot) {
     bot.process?.kill()
     bot.process = null
+    if (this.payload[bot.sid]?.status === 'error') return
     this.setData(bot, { status: 'offline' })
   }
 }

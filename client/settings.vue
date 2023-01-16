@@ -3,6 +3,12 @@
     <p v-if="data.status === 'offline'">
       未连接到 go-cqhttp 子进程。
     </p>
+    <template v-else-if="data.status === 'error'">
+      <p>{{ data.message }}</p>
+      <div class="submit">
+        <k-button v-if="data.link" @click="open(data.link)">前往验证</k-button>
+      </div>
+    </template>
     <p v-else-if="data.status === 'init'">
       正在创建 go-cqhttp 子进程……
     </p>
@@ -12,40 +18,41 @@
     <template v-else-if="data.status === 'qrcode'">
       <p>请使用手机登录 QQ 扫描二维码：</p>
       <img class="qrcode" :src="data.image"/>
+      <p v-if="data.message">{{ data.message }}</p>
     </template>
     <template v-else-if="data.status === 'captcha'">
       <p>请填写图中的内容：</p>
       <img :src="data.image"/>
       <div class="submit">
         <el-input v-model="text"></el-input>
-        <k-button @click="send('gocqhttp/write', sid, text)">提交</k-button>
+        <k-button @click="submit(text)">提交</k-button>
       </div>
     </template>
     <template v-else-if="data.status === 'sms'">
       <p>请输入短信验证码：</p>
       <div class="submit">
         <el-input v-model="text"></el-input>
-        <k-button @click="send('gocqhttp/write', sid, text)">提交</k-button>
+        <k-button @click="submit(text)">提交</k-button>
       </div>
     </template>
     <template v-else-if="data.status === 'sms-confirm'">
       <p>账号已开启设备锁。点击确认将向手机 {{ data.phone }} 发送短信验证码。</p>
       <div class="submit">
-        <k-button @click="send('gocqhttp/write', sid, '')">确认</k-button>
+        <k-button @click="submit('')">确认</k-button>
       </div>
     </template>
     <template v-else-if="data.status === 'sms-or-qrcode'">
       <p>账号已开启设备锁。请选择验证方式：</p>
       <div class="submit">
-        <k-button @click="send('gocqhttp/write', sid, '1')">1. 向手机 {{ data.phone }} 发送短信验证码</k-button>
-        <k-button @click="send('gocqhttp/write', sid, '2')">2. 使用手机登录 QQ 并扫码验证</k-button>
+        <k-button @click="submit('1')">1. 向手机 {{ data.phone }} 发送短信验证码</k-button>
+        <k-button @click="submit('2')">2. 使用手机登录 QQ 并扫码验证</k-button>
       </div>
     </template>
     <template v-else-if="data.status === 'slider-or-qrcode'">
       <p>登录需要滑条验证码。请选择验证方式：</p>
       <div class="submit">
-        <k-button @click="send('gocqhttp/write', sid, '1')">1. 使用浏览器抓取滑条并登录</k-button>
-        <k-button @click="send('gocqhttp/write', sid, '2')">2. 使用手机登录 QQ 并扫码验证 (需要手机和 Koishi 在同一网络下)</k-button>
+        <k-button @click="submit('1')">1. 使用浏览器抓取滑条并登录</k-button>
+        <k-button @click="submit('2')">2. 使用手机登录 QQ 并扫码验证 (需要手机和 Koishi 在同一网络下)</k-button>
       </div>
     </template>
     <template v-else-if="data.status === 'slider'">
@@ -80,7 +87,7 @@ const data = computed(() => {
 const type = computed(() => {
   if (!data.value) return
   if (data.value.status === 'init') return
-  if (data.value.status === 'offline') return 'error'
+  if (data.value.status === 'offline' || data.value.status === 'error') return 'error'
   if (data.value.status === 'success') return 'success'
   return 'warning'
 })
@@ -91,6 +98,14 @@ const schema = Schema.object({
     password: Schema.string().role('secret').description('机器人的密码。'),
   }).description('go-cqhttp 基础设置'),
 })
+
+function submit(text: string) {
+  return send('gocqhttp/write', sid.value, text)
+}
+
+function open(url: string) {
+  window.open(url, '_blank')
+}
 
 </script>
 
@@ -105,6 +120,18 @@ const schema = Schema.object({
   .qrcode {
     width: 200px;
     image-rendering: pixelated;
+  }
+
+  .k-button + .k-button {
+    margin-left: 1rem;
+  }
+
+  .link {
+    position: absolute;
+    margin: 1rem 0;
+    line-height: 1.7;
+    right: 0;
+    margin-right: 1.5rem;
   }
 
   .submit {
