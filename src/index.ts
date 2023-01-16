@@ -330,7 +330,7 @@ namespace Launcher {
       'ignore-invalid-cqcode': Schema.boolean().default(false).description('是否忽略无效的消息段 (默认情况下将原样发送)。'),
       'force-fragment': Schema.boolean().default(false).description('是否强制分片发送消息 (分片发送将会带来更快的速度，但是兼容性会有些问题)。'),
       'fix-url': Schema.boolean().default(false).description('是否将 URL 分片发送。'),
-      'proxy-rewrite': Schema.string().default('').description('下载图片等资源是要请求的网络代理。'),
+      'proxy-rewrite': Schema.string().default('').description('下载图片等资源时要请求的网络代理。'),
       'report-self-message': Schema.boolean().default(false).description('是否上报自身消息。'),
       'remove-reply-at': Schema.boolean().default(false).description('移除 reply 消息段附带的 at 消息段。'),
       'extra-reply-data': Schema.boolean().default(false).description('为 reply 消息段附加更多信息。'),
