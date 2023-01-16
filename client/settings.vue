@@ -1,20 +1,27 @@
 <template>
   <k-comment class="gocqhttp" v-if="data" :type="type">
-    <p v-if="data.status === 'offline'">
-      未连接到 go-cqhttp 子进程。
-    </p>
-    <template v-else-if="data.status === 'error'">
-      <p>{{ data.message }}</p>
-      <div class="submit">
-        <k-button v-if="data.link" @click="open(data.link)">前往验证</k-button>
+    <template v-if="data.status === 'offline'">
+      <p>未连接到 go-cqhttp 子进程。</p>
+      <div class="action">
+        <el-button type="primary" @click="send('gocqhttp/start', sid)">重新启动</el-button>
       </div>
     </template>
-    <p v-else-if="data.status === 'init'">
-      正在创建 go-cqhttp 子进程……
-    </p>
-    <p v-else-if="data.status === 'success'">
-      已成功连接 go-cqhttp 子进程。
-    </p>
+    <template v-else-if="data.status === 'error'">
+      <p>{{ data.message }}</p>
+      <div class="action">
+        <el-button type="primary" v-if="data.link" @click="open(data.link)">前往验证</el-button>
+        <el-button type="primary" @click="send('gocqhttp/start', sid)">重新启动</el-button>
+      </div>
+    </template>
+    <template v-else-if="data.status === 'init'">
+      <p>正在创建 go-cqhttp 子进程……</p>
+    </template>
+    <template v-else-if="data.status === 'continue'">
+      <p>账号登录中……</p>
+    </template>
+    <template v-else-if="data.status === 'success'">
+      <p>已成功连接 go-cqhttp 子进程。</p>
+    </template>
     <template v-else-if="data.status === 'qrcode'">
       <p>请使用手机登录 QQ 扫描二维码：</p>
       <img class="qrcode" :src="data.image"/>
@@ -23,40 +30,41 @@
     <template v-else-if="data.status === 'captcha'">
       <p>请填写图中的内容：</p>
       <img :src="data.image"/>
-      <div class="submit">
+      <div class="action input">
         <el-input v-model="text"></el-input>
-        <k-button @click="submit(text)">提交</k-button>
+        <el-button type="primary" @click="submit(text)">提交</el-button>
       </div>
     </template>
     <template v-else-if="data.status === 'sms'">
       <p>请输入短信验证码：</p>
-      <div class="submit">
+      <div class="action">
         <el-input v-model="text"></el-input>
-        <k-button @click="submit(text)">提交</k-button>
+        <el-button type="primary" @click="submit(text)">提交</el-button>
       </div>
     </template>
     <template v-else-if="data.status === 'sms-confirm'">
       <p>账号已开启设备锁。点击确认将向手机 {{ data.phone }} 发送短信验证码。</p>
-      <div class="submit">
-        <k-button @click="submit('')">确认</k-button>
+      <div class="action">
+        <el-button type="primary" @click="submit('')">确认</el-button>
       </div>
     </template>
     <template v-else-if="data.status === 'sms-or-qrcode'">
       <p>账号已开启设备锁。请选择验证方式：</p>
-      <div class="submit">
-        <k-button @click="submit('1')">1. 向手机 {{ data.phone }} 发送短信验证码</k-button>
-        <k-button @click="submit('2')">2. 使用手机登录 QQ 并扫码验证</k-button>
+      <div class="action">
+        <el-button type="primary" @click="submit('1')">1. 向手机 {{ data.phone }} 发送短信验证码</el-button>
+        <el-button type="primary" @click="submit('2')">2. 使用手机登录 QQ 并扫码验证</el-button>
       </div>
     </template>
     <template v-else-if="data.status === 'slider-or-qrcode'">
       <p>登录需要滑条验证码。请选择验证方式：</p>
-      <div class="submit">
-        <k-button @click="submit('1')">1. 使用浏览器抓取滑条并登录</k-button>
-        <k-button @click="submit('2')">2. 使用手机登录 QQ 并扫码验证 (需要手机和 Koishi 在同一网络下)</k-button>
+      <div class="action">
+        <el-button type="primary" @click="submit('1')">1. 使用浏览器抓取滑条并登录</el-button>
+        <el-button type="primary" @click="submit('2')">2. 使用手机登录 QQ 并扫码验证 (需要手机和 Koishi 在同一网络下)</el-button>
       </div>
     </template>
     <template v-else-if="data.status === 'slider'">
-      <p>账号已开启设备锁。请点击<a :href="data.link" target="_blank">此链接</a>验证后重启 Bot。</p>
+      <p>请在 120 秒内完成下方的验证：</p>
+      <iframe :src="data.link" height="280" width="300"></iframe>
     </template>
   </k-comment>
 
@@ -87,7 +95,7 @@ const data = computed(() => {
 const type = computed(() => {
   if (!data.value) return
   if (data.value.status === 'init') return
-  if (data.value.status === 'offline' || data.value.status === 'error') return 'error'
+  if (data.value.status === 'error') return 'error'
   if (data.value.status === 'success') return 'success'
   return 'warning'
 })
@@ -122,10 +130,6 @@ function open(url: string) {
     image-rendering: pixelated;
   }
 
-  .k-button + .k-button {
-    margin-left: 1rem;
-  }
-
   .link {
     position: absolute;
     margin: 1rem 0;
@@ -134,13 +138,35 @@ function open(url: string) {
     margin-right: 1.5rem;
   }
 
-  .submit {
-    display: block;
+  .action {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
     margin: 1rem 0;
+
+    &.input {
+      gap: 1rem 1rem;
+    }
 
     .el-input {
       width: 200px;
-      margin-right: 1rem;
+    }
+
+    .el-button {
+      display: inline-block;
+      text-align: initial;
+      height: auto;
+      white-space: normal;
+      padding: 4px 15px;
+      line-height: 1.6;
+    }
+
+    .el-button + .el-button {
+      margin-left: 0;
+    }
+
+    iframe {
+      border: none;
     }
   }
 }

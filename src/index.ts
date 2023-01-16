@@ -56,6 +56,7 @@ namespace Data {
     | 'error'
     | 'offline'
     | 'success'
+    | 'continue'
     | 'init'
     | 'sms'
     | 'qrcode'
@@ -80,7 +81,7 @@ class Launcher extends DataService<Dict<Data>> {
 
   constructor(ctx: Context, private config: Launcher.Config) {
     super(ctx, 'gocqhttp', { authority: 4 })
-    logger.level = config.logLevel || 3
+    logger.level = config.logLevel
 
     ctx.on('bot-connect', async (bot: OneBotBot) => {
       if (!bot.config.gocqhttp?.enabled) return
@@ -127,6 +128,7 @@ class Launcher extends DataService<Dict<Data>> {
       const bot = this.ctx.bots[sid] as OneBotBot
       if (!bot) return ctx.status = 404
       ctx.status = 200
+      this.setData(bot, { status: 'continue' })
       return this.write(sid, ticket)
     })
   }
@@ -252,6 +254,11 @@ class Launcher extends DataService<Dict<Data>> {
               status: 'error',
               message: '发送验证码失败，可能是请求过于频繁。',
             })
+          } else if (text.includes('验证超时')) {
+            this.setData(bot, {
+              status: 'error',
+              message: '登录失败：验证超时。',
+            })
           } else if (text.includes('密码错误或账号被冻结')) {
             this.setData(bot, {
               status: 'error',
@@ -317,7 +324,7 @@ namespace Launcher {
 
   export const Config: Schema<Config> = Schema.object({
     root: Schema.string().description('存放账户文件的目录。').default('accounts'),
-    logLevel: Schema.number().description('输出日志等级。').default(3),
+    logLevel: Schema.number().description('输出日志等级。').default(2),
     template: Schema.string().description('使用的配置文件模板。').hidden(),
     message: Schema.object({
       'ignore-invalid-cqcode': Schema.boolean().default(false).description('是否忽略无效的消息段 (默认情况下将原样发送)。'),
