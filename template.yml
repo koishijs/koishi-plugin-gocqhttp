@@ -6,7 +6,7 @@ account:
   # QQ账号
   uin: ${{ selfId }}
   # 密码为空时使用扫码登录
-  password: '${{ password }}'
+  password: >-${{ password }}
   # 是否开启密码加密
   encrypt: false
   # 在线状态 请参考 https://docs.go-cqhttp.org/guide/config.html#在线状态
