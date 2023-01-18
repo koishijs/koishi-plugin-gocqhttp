@@ -6,7 +6,8 @@ account:
   # QQ账号
   uin: ${{ selfId }}
   # 密码为空时使用扫码登录
-  password: '${{ password }}'
+  password: >-
+    ${{ password }}
   # 是否开启密码加密
   encrypt: false
   # 在线状态 请参考 https://docs.go-cqhttp.org/guide/config.html#在线状态
@@ -53,7 +54,8 @@ output:
 # 默认中间件锚点
 default-middlewares: &default
   # 访问密钥, 强烈推荐在公网的服务器设置
-  access-token: '${{ token }}'
+  access-token: >-
+    ${{ token }}
   # 事件过滤器文件目录
   filter: ''
   # API限速设置
@@ -100,7 +102,8 @@ servers:
       # 反向HTTP POST地址列表
       post:
         - url: http://${{ selfUrl }}
-          secret: '${{ secret }}'
+          secret: >-
+            ${{ secret }}
           # 最大重试，0 时禁用
           # max-retries: 3
           # 重试时间，单位毫秒，0 时立即
