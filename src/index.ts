@@ -90,7 +90,7 @@ class Launcher extends DataService<Dict<Data>> {
 
     ctx.on('bot-disconnect', async (bot: OneBotBot) => {
       if (!bot.config.gocqhttp?.enabled) return
-      return this.disconnect(bot)
+      return this.disconnect(bot, true)
     })
 
     ctx.using(['console'], (ctx) => {
@@ -211,6 +211,8 @@ class Launcher extends DataService<Dict<Data>> {
             this.payload[bot.sid] = { status: 'sms-or-qrcode' }
           } else if (text.includes('登录需要滑条验证码') && text.includes('请选择验证方式')) {
             this.payload[bot.sid] = { status: 'slider-or-qrcode' }
+          } else if (text.includes('请选择提交滑块ticket方式')) {
+            this.write(bot.sid, '2')
           } else if ((cap = text.match(/向手机 (.+?) 发送短信验证码/))) {
             const phone = cap[1].trim()
             if (text.includes('账号已开启设备锁')) {
@@ -238,7 +240,7 @@ class Launcher extends DataService<Dict<Data>> {
               status: 'slider',
               link: text
                 .match(/https:\S+/)[0]
-                .replace(/^https:\/\/captcha\.go-cqhttp\.org\/captcha\?id=(.+?)&/, `/gocqhttp/captcha?id=${bot.sid}&`),
+                .replace(/^https:\/\/ssl\.captcha\.qq\.com\/template\/wireless_mqq_captcha\.html\?/, `/gocqhttp/captcha?id=${bot.sid}&`),
             })
           } else if (text.includes('扫码被用户取消')) {
             this.payload[bot.sid].message = '扫码被用户取消。'
@@ -249,6 +251,10 @@ class Launcher extends DataService<Dict<Data>> {
           } else if (text.includes('扫码成功')) {
             this.payload[bot.sid].message = '扫码成功，请在手机端确认登录。'
             this.refresh()
+          } else if (text.includes('删除 device.json')) {
+            // TODO
+          } else if (text.includes('Enter 继续')) {
+            this.write(bot.sid, '')
           } else if (text.includes('发送验证码失败')) {
             this.setData(bot, {
               status: 'error',
@@ -259,18 +265,11 @@ class Launcher extends DataService<Dict<Data>> {
               status: 'error',
               message: '登录失败：验证超时。',
             })
-          } else if (text.includes('密码错误或账号被冻结')) {
+          } else if (text.includes('登录失败')) {
             this.setData(bot, {
               status: 'error',
-              message: '登录失败：密码错误或账号被冻结。',
+              message: text,
             })
-            this.write(bot.sid, '')
-          } else if (text.includes('账号被冻结')) {
-            this.setData(bot, {
-              status: 'error',
-              message: '登录失败：账号被冻结。',
-            })
-            this.write(bot.sid, '')
           } else if (text.includes('账号已开启设备锁') && (cap = text.match(/-> (.+?) <-/))) {
             this.setData(bot, {
               status: 'error',
@@ -304,11 +303,16 @@ class Launcher extends DataService<Dict<Data>> {
     })
   }
 
-  async disconnect(bot: OneBotBot) {
+  async disconnect(bot: OneBotBot, hard?: boolean) {
     bot.process?.kill()
     bot.process = null
     if (this.payload[bot.sid]?.status === 'error') return
-    this.setData(bot, { status: 'offline' })
+    if (hard) {
+      delete this.payload[bot.sid]
+      this.refresh()
+    } else {
+      this.setData(bot, { status: 'offline' })
+    }
   }
 }
 

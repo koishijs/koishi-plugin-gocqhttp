@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-gocqhttp",
   "description": "go-cqhttp launcher for Koishi",
-  "version": "3.3.3",
+  "version": "3.4.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -50,20 +50,19 @@
     }
   },
   "peerDependencies": {
-    "@koishijs/plugin-adapter-onebot": "^5.5.4",
-    "koishi": "^4.11.4"
+    "koishi": "^4.12.1"
   },
   "devDependencies": {
-    "@koishijs/client": "^5.2.1",
-    "@koishijs/plugin-adapter-onebot": "^5.5.4",
-    "@koishijs/plugin-console": "^5.2.1",
-    "@koishijs/plugin-market": "^1.10.0",
-    "@types/node": "^18.11.17",
-    "koishi": "^4.11.4",
-    "typescript": "^4.9.4"
+    "@koishijs/client": "^5.5.5",
+    "@koishijs/plugin-adapter-onebot": "^5.6.2",
+    "@koishijs/plugin-console": "^5.5.5",
+    "@koishijs/plugin-market": "^1.12.3",
+    "@types/node": "^18.14.2",
+    "koishi": "^4.12.1",
+    "typescript": "^4.9.5"
   },
   "dependencies": {
-    "go-cqhttp": "^2.2.0",
+    "go-cqhttp": "^3.1.1",
     "strip-ansi": "^6.0.1"
   }
 }

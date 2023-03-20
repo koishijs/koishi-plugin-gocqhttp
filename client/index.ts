@@ -7,5 +7,6 @@ export default defineExtension((ctx) => {
   ctx.slot({
     type: 'market-settings',
     component: Settings,
+    order: -2000,
   })
 })
