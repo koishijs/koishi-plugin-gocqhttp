@@ -308,6 +308,11 @@ class Launcher extends DataService<Dict<Data>> {
               link: cap[1],
             })
             this.write(bot.sid, '')
+          } else if (text.includes('当前协议不支持二维码登录')) {
+            this.setData(bot, {
+              status: 'error',
+              message: '当前协议不支持二维码登录，请配置账号密码或更换协议。',
+            })
           }
         }
       })
@@ -325,6 +330,10 @@ class Launcher extends DataService<Dict<Data>> {
       })
 
       bot.process.on('exit', () => {
+        const data = this.payload[bot.sid]
+        if (!['offline', 'error'].includes(data?.status)) {
+          this.setData(bot, { status: 'offline', message: '遇到未知错误，请查看日志。' })
+        }
         reject(new Error())
       })
 
