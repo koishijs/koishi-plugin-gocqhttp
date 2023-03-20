@@ -21,6 +21,9 @@
     </template>
     <template v-else-if="data.status === 'success'">
       <p>已成功连接 go-cqhttp 子进程。</p>
+      <div class="action" v-if="data.device">
+        <el-button type="primary" @click="dialog = true">设备信息</el-button>
+      </div>
     </template>
     <template v-else-if="data.status === 'qrcode'">
       <p>请使用手机登录 QQ 扫描二维码：</p>
@@ -69,19 +72,31 @@
   </k-comment>
 
   <k-form v-if="sid" v-model="config" :initial="current.config" :schema="schema"></k-form>
+
+  <el-dialog destroy-on-close v-model="dialog" title="设备信息">
+    <el-input readonly v-model="data.device" type="textarea" :autosize="{ minRows: 10, maxRows: 10 }"></el-input>
+    <template #footer>
+      <el-button @click.stop.prevent="copyToClipboard(data.device)">复制到剪贴板</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
 
 import { inject, computed, ref } from 'vue'
 import {} from 'koishi-plugin-gocqhttp'
-import { Schema, store, send } from '@koishijs/client'
+import { Schema, store, send, message } from '@koishijs/client'
+
+defineProps<{
+  data: any
+}>()
 
 const local: any = inject('manager.settings.local')
 const config: any = inject('manager.settings.config')
 const current: any = inject('manager.settings.current')
 
 const text = ref('')
+const dialog = ref(false)
 
 const sid = computed(() => {
   if (local.value.name !== '@koishijs/plugin-adapter-onebot') return
@@ -113,6 +128,11 @@ function submit(text: string) {
 
 function open(url: string) {
   window.open(url, '_blank')
+}
+
+async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text)
+  message.success('已复制到剪贴板')
 }
 
 </script>

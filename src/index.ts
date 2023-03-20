@@ -1,4 +1,4 @@
-import { Context, Dict, interpolate, Logger, Schema } from 'koishi'
+import { Context, Dict, interpolate, Logger, noop, Schema } from 'koishi'
 import OneBotBot from '@koishijs/plugin-adapter-onebot'
 import { DataService } from '@koishijs/plugin-console'
 import {} from '@koishijs/plugin-market'
@@ -18,6 +18,7 @@ declare module '@koishijs/plugin-console' {
   }
 
   interface Events {
+    'gocqhttp/device'(sid: string, device: string): void
     'gocqhttp/write'(sid: string, text: string): void
     'gocqhttp/start'(sid: string): void
     'gocqhttp/stop'(sid: string): void
@@ -73,6 +74,7 @@ interface Data {
   phone?: string
   link?: string
   message?: string
+  device?: string
 }
 
 class Launcher extends DataService<Dict<Data>> {
@@ -98,6 +100,12 @@ class Launcher extends DataService<Dict<Data>> {
         dev: resolve(__dirname, '../client/index.ts'),
         prod: resolve(__dirname, '../dist'),
       })
+
+      ctx.console.addListener('gocqhttp/device', (sid, device) => {
+        const bot = this.ctx.bots[sid] as OneBotBot
+        const cwd = resolve(bot.ctx.baseDir, this.config.root, bot.selfId)
+        return this.writeDevice(cwd, device)
+      }, { authority: 4 })
 
       ctx.console.addListener('gocqhttp/write', (sid, text) => {
         return this.write(sid, text)
@@ -175,6 +183,25 @@ class Launcher extends DataService<Dict<Data>> {
     this.refresh()
   }
 
+  async readDevice(cwd: string) {
+    const [json, buffer] = await Promise.all([
+      fsp.readFile(cwd + '/device.json', 'utf8'),
+      fsp.readFile(cwd + '/session.token').catch(noop),
+    ])
+    const prefix = 'qdvc:' + Buffer.from(JSON.stringify(json)).toString('base64')
+    if (!buffer) return prefix
+    return `${prefix},${Buffer.from(buffer).toString('base64')}`
+  }
+
+  async writeDevice(cwd: string, data: string) {
+    if (!data.startsWith('qdvc:')) throw new Error('invalid qdvc string')
+    const [device, session] = data.slice(5).split(',')
+    await Promise.all([
+      fsp.writeFile(cwd + '/device.json', JSON.parse(Buffer.from(device, 'base64').toString())),
+      fsp.writeFile(cwd + '/session.token', Buffer.from(session, 'base64')),
+    ])
+  }
+
   async connect(bot: OneBotBot) {
     // create working folder
     const cwd = resolve(bot.ctx.baseDir, this.config.root, bot.selfId)
@@ -204,7 +231,8 @@ class Launcher extends DataService<Dict<Data>> {
           let cap: RegExpMatchArray
           if (text.includes('アトリは、高性能ですから')) {
             resolve()
-            this.setData(bot, { status: 'success' })
+            const device = await this.readDevice(cwd).catch(noop)
+            this.setData(bot, { status: 'success', device })
           } else if (text.includes('请输入(1 - 2)')) {
             this.refresh()
           } else if (text.includes('账号已开启设备锁') && text.includes('请选择验证方式')) {
