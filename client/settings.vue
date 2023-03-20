@@ -2,16 +2,9 @@
   <k-comment class="gocqhttp" v-if="data" :type="type">
     <template v-if="data.status === 'offline'">
       <p>未连接到 go-cqhttp 子进程。</p>
-      <div class="action">
-        <el-button type="primary" @click="send('gocqhttp/start', sid)">重新启动</el-button>
-      </div>
     </template>
     <template v-else-if="data.status === 'error'">
       <p>{{ data.message }}</p>
-      <div class="action">
-        <el-button type="primary" v-if="data.link" @click="open(data.link)">前往验证</el-button>
-        <el-button type="primary" @click="send('gocqhttp/start', sid)">重新启动</el-button>
-      </div>
     </template>
     <template v-else-if="data.status === 'init'">
       <p>正在创建 go-cqhttp 子进程……</p>
@@ -21,9 +14,6 @@
     </template>
     <template v-else-if="data.status === 'success'">
       <p>已成功连接 go-cqhttp 子进程。</p>
-      <div class="action" v-if="data.device">
-        <el-button type="primary" @click="dialog = true">设备信息</el-button>
-      </div>
     </template>
     <template v-else-if="data.status === 'qrcode'">
       <p>请使用手机登录 QQ 扫描二维码：</p>
@@ -40,7 +30,7 @@
     </template>
     <template v-else-if="data.status === 'sms'">
       <p>请输入短信验证码：</p>
-      <div class="action">
+      <div class="action input">
         <el-input v-model="text"></el-input>
         <el-button type="primary" @click="submit(text)">提交</el-button>
       </div>
@@ -69,12 +59,33 @@
       <p>请在 120 秒内完成下方的验证：</p>
       <iframe :src="data.link" height="280" width="300"></iframe>
     </template>
+
+    <div class="action">
+      <el-button type="primary" v-if="data.status === 'error' && data.link" @click="open(data.link)">前往验证</el-button>
+      <el-button type="primary" v-if="data.device" @click="dialog = true">设备信息</el-button>
+
+      <el-button
+        type="primary"
+        v-if="['offline', 'error'].includes(data.status)"
+        @click="send('gocqhttp/start', sid)"
+      >重新启动</el-button>
+      <el-button
+        type="danger"
+        v-else
+        @click="send('gocqhttp/stop', sid)"
+      >断开连接</el-button>
+    </div>
   </k-comment>
 
   <k-form v-if="sid" v-model="config" :initial="current.config" :schema="schema"></k-form>
 
   <el-dialog destroy-on-close v-model="dialog" title="设备信息">
-    <el-input readonly v-model="data.device" type="textarea" :autosize="{ minRows: 10, maxRows: 10 }"></el-input>
+    <el-input
+      v-model="data.device"
+      type="textarea"
+      :autosize="{ minRows: 10, maxRows: 10 }"
+      :readonly="data.status === 'success'"
+    ></el-input>
     <template #footer>
       <el-button @click.stop.prevent="copyToClipboard(data.device)">复制到剪贴板</el-button>
     </template>

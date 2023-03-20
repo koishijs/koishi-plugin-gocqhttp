@@ -178,8 +178,12 @@ class Launcher extends DataService<Dict<Data>> {
     return this.payload
   }
 
-  private setData(bot: OneBotBot, data: Data) {
+  private async setData(bot: OneBotBot, data: Data) {
     this.payload[bot.sid] = data
+    if (['error', 'success', 'offline'].includes(data.status)) {
+      const cwd = resolve(bot.ctx.baseDir, this.config.root, bot.selfId)
+      data.device = await this.readDevice(cwd).catch(noop)
+    }
     this.refresh()
   }
 
@@ -231,8 +235,7 @@ class Launcher extends DataService<Dict<Data>> {
           let cap: RegExpMatchArray
           if (text.includes('アトリは、高性能ですから')) {
             resolve()
-            const device = await this.readDevice(cwd).catch(noop)
-            this.setData(bot, { status: 'success', device })
+            this.setData(bot, { status: 'success' })
           } else if (text.includes('请输入(1 - 2)')) {
             this.refresh()
           } else if (text.includes('账号已开启设备锁') && text.includes('请选择验证方式')) {
