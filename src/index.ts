@@ -213,7 +213,8 @@ class Launcher extends DataService<Dict<Data>> {
 
   async connect(bot: OneBotBot) {
     // create working folder
-    const cwd = resolve(bot.ctx.baseDir, this.config.root, bot.selfId)
+    const { root, signServer } = this.config
+    const cwd = resolve(bot.ctx.baseDir, root, bot.selfId)
     await mkdir(cwd, { recursive: true })
 
     // create config.yml
@@ -223,7 +224,7 @@ class Launcher extends DataService<Dict<Data>> {
       this.setData(bot, { status: 'init' })
 
       // spawn go-cqhttp process
-      bot.process = gocqhttp({ cwd })
+      bot.process = gocqhttp({ cwd, faststart: true, signServer })
 
       bot.process.stdout.on('data', async (data) => {
         data = strip(data.toString()).trim()
@@ -366,6 +367,7 @@ namespace Launcher {
 
   export interface Config {
     root?: string
+    signServer?: string
     logLevel?: number
     template?: string
     message?: Dict
@@ -373,6 +375,7 @@ namespace Launcher {
 
   export const Config: Schema<Config> = Schema.object({
     root: Schema.string().description('存放账户文件的目录。').default('accounts'),
+    signServer: Schema.string().description('签名服务器地址。'),
     logLevel: Schema.number().description('输出日志等级。').default(2),
     template: Schema.string().description('使用的配置文件模板。').hidden(),
     message: Schema.object({
