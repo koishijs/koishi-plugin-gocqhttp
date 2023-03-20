@@ -189,9 +189,10 @@ class Launcher extends DataService<Dict<Data>> {
 
   async readDevice(cwd: string) {
     const [json, buffer] = await Promise.all([
-      fsp.readFile(cwd + '/device.json', 'utf8'),
+      fsp.readFile(cwd + '/device.json', 'utf8').catch(noop),
       fsp.readFile(cwd + '/session.token').catch(noop),
     ])
+    if (!json) return 'qdvc:'
     const prefix = 'qdvc:' + Buffer.from(JSON.stringify(json)).toString('base64')
     if (!buffer) return prefix
     return `${prefix},${Buffer.from(buffer).toString('base64')}`
@@ -199,11 +200,15 @@ class Launcher extends DataService<Dict<Data>> {
 
   async writeDevice(cwd: string, data: string) {
     if (!data.startsWith('qdvc:')) throw new Error('invalid qdvc string')
+    const tasks: Promise<void>[] = []
     const [device, session] = data.slice(5).split(',')
-    await Promise.all([
-      fsp.writeFile(cwd + '/device.json', JSON.parse(Buffer.from(device, 'base64').toString())),
-      fsp.writeFile(cwd + '/session.token', Buffer.from(session, 'base64')),
-    ])
+    tasks.push(device
+      ? fsp.writeFile(cwd + '/device.json', JSON.parse(Buffer.from(device, 'base64').toString()))
+      : fsp.rm(cwd + '/device.json').catch(noop))
+    tasks.push(session
+      ? fsp.writeFile(cwd + '/session.token', Buffer.from(session, 'base64'))
+      : fsp.rm(cwd + '/session.token').catch(noop))
+    await Promise.all(tasks)
   }
 
   async connect(bot: OneBotBot) {

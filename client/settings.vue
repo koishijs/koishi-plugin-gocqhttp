@@ -81,12 +81,18 @@
 
   <el-dialog destroy-on-close v-model="dialog" title="设备信息">
     <el-input
+      class="qdvc-input"
+      :class="{ invalid }"
       v-model="data.device"
       type="textarea"
       :autosize="{ minRows: 10, maxRows: 10 }"
       :readonly="data.status === 'success'"
     ></el-input>
     <template #footer>
+      <template v-if="data.status !== 'success'">
+        <el-button @click.stop.prevent="data.device = 'qdvc:'">清空设备信息</el-button>
+        <el-button :disabled="invalid" @click.stop.prevent="saveDevice">保存设备信息</el-button>
+      </template>
       <el-button @click.stop.prevent="copyToClipboard(data.device)">复制到剪贴板</el-button>
     </template>
   </el-dialog>
@@ -126,6 +132,18 @@ const type = computed(() => {
   return 'warning'
 })
 
+const invalid = computed(() => {
+  if (!data.value?.device?.startsWith('qdvc:')) return true
+  const [device] = data.value.device.slice(5).split(',')
+  if (device) {
+    try {
+      JSON.parse(atob(device))
+    } catch {
+      return true
+    }
+  }
+})
+
 const schema = Schema.object({
   gocqhttp: Schema.object({
     enabled: Schema.boolean().default(false).description('是否自动创建 go-cqhttp 子进程。'),
@@ -139,6 +157,12 @@ function submit(text: string) {
 
 function open(url: string) {
   window.open(url, '_blank')
+}
+
+async function saveDevice() {
+  await send('gocqhttp/device', sid.value, data.value.device)
+  message.success('设备信息已保存')
+  dialog.value = false
 }
 
 async function copyToClipboard(text: string) {
@@ -199,6 +223,12 @@ async function copyToClipboard(text: string) {
     iframe {
       border: none;
     }
+  }
+}
+
+.qdvc-input.invalid {
+  :deep(textarea) {
+    box-shadow: 0 0 0 1px var(--el-color-danger) inset;
   }
 }
 
