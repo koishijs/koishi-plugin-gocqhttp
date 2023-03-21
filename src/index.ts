@@ -337,7 +337,7 @@ class Launcher extends DataService<Dict<Data>> {
 
       bot.process.on('exit', () => {
         const data = this.payload[bot.sid]
-        if (!['offline', 'error'].includes(data?.status)) {
+        if (data && !['offline', 'error'].includes(data.status)) {
           this.setData(bot, { status: 'offline', message: '遇到未知错误，请查看日志。' })
         }
         reject(new Error())
@@ -352,11 +352,10 @@ class Launcher extends DataService<Dict<Data>> {
   async disconnect(bot: OneBotBot, hard?: boolean) {
     bot.process?.kill()
     bot.process = null
-    if (this.payload[bot.sid]?.status === 'error') return
     if (hard) {
       delete this.payload[bot.sid]
       this.refresh()
-    } else {
+    } else if (this.payload[bot.sid]?.status !== 'error') {
       this.setData(bot, { status: 'offline' })
     }
   }
