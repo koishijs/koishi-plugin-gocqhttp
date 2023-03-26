@@ -193,7 +193,7 @@ class Launcher extends DataService<Dict<Data>> {
       fsp.readFile(cwd + '/session.token').catch(noop),
     ])
     if (!json) return 'qdvc:'
-    const prefix = 'qdvc:' + Buffer.from(JSON.stringify(json)).toString('base64')
+    const prefix = 'qdvc:' + Buffer.from(json).toString('base64')
     if (!buffer) return prefix
     return `${prefix},${Buffer.from(buffer).toString('base64')}`
   }
@@ -203,7 +203,7 @@ class Launcher extends DataService<Dict<Data>> {
     const tasks: Promise<void>[] = []
     const [device, session] = data.slice(5).split(',')
     tasks.push(device
-      ? fsp.writeFile(cwd + '/device.json', JSON.parse(Buffer.from(device, 'base64').toString()))
+      ? fsp.writeFile(cwd + '/device.json', Buffer.from(device, 'base64').toString())
       : fsp.rm(cwd + '/device.json').catch(noop))
     tasks.push(session
       ? fsp.writeFile(cwd + '/session.token', Buffer.from(session, 'base64'))
