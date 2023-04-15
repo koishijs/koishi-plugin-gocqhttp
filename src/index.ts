@@ -226,20 +226,23 @@ class Launcher extends DataService<Dict<Data>> {
       // spawn go-cqhttp process
       bot.process = gocqhttp({ cwd, faststart: true, signServer })
 
-      bot.process.stdout.on('data', async (data) => {
+      const handleData = async (data: any) => {
         data = strip(data.toString()).trim()
         if (!data) return
         for (const line of data.trim().split('\n')) {
-          const text: string = line.slice(23)
+          let text: string = line.slice(23)
           const [type] = text.split(']: ', 1)
           if (type in logLevelMap) {
-            logger[logLevelMap[type]](text.slice(type.length + 3))
+            text = text.slice(type.length + 3)
+            logger[logLevelMap[type]](text)
           } else {
             logger.info(line.trim())
           }
 
           let cap: RegExpMatchArray
-          if (text.includes('アトリは、高性能ですから')) {
+          if (text.includes('的消息')) {
+            return
+          } else if (text.includes('アトリは、高性能ですから')) {
             resolve()
             this.setData(bot, { status: 'success' })
           } else if (text.includes('请输入(1 - 2)')) {
@@ -321,18 +324,13 @@ class Launcher extends DataService<Dict<Data>> {
             })
           }
         }
-      })
+      }
+
+      bot.process.stdout.on('data', handleData)
+      bot.process.stderr.on('data', handleData)
 
       bot.process.on('error', (error) => {
         logger.warn(error)
-      })
-
-      bot.process.stderr.on('data', async (data) => {
-        data = strip(data.toString()).trim()
-        if (!data) return
-        for (const line of data.split('\n')) {
-          logger.warn(line.trim())
-        }
       })
 
       bot.process.on('exit', () => {
