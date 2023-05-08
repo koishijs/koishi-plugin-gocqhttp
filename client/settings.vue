@@ -62,7 +62,7 @@
 
     <div class="action">
       <el-button type="primary" v-if="data.status === 'error' && data.link" @click="open(data.link)">前往验证</el-button>
-      <el-button type="primary" v-if="data.device" @click="dialog = true">设备信息</el-button>
+      <el-button type="primary" v-if="data.device" @click="dialog = true">登录信息</el-button>
 
       <el-button
         type="primary"
@@ -79,7 +79,7 @@
 
   <k-form v-if="sid" v-model="config" :initial="current.config" :schema="schema"></k-form>
 
-  <el-dialog destroy-on-close v-model="dialog" title="设备信息">
+  <el-dialog destroy-on-close v-model="dialog" title="登录信息">
     <el-input
       class="qdvc-input"
       :class="{ invalid }"
@@ -90,8 +90,8 @@
     ></el-input>
     <template #footer>
       <template v-if="data.status !== 'success'">
-        <el-button @click.stop.prevent="data.device = 'qdvc:'">清空设备信息</el-button>
-        <el-button :disabled="invalid" @click.stop.prevent="saveDevice">保存设备信息</el-button>
+        <el-button @click.stop.prevent="data.device = 'qdvc:'">清空登录信息</el-button>
+        <el-button :disabled="invalid" @click.stop.prevent="saveDevice">保存登录信息</el-button>
       </template>
       <el-button @click.stop.prevent="copyToClipboard(data.device)">复制到剪贴板</el-button>
     </template>
@@ -161,7 +161,7 @@ function open(url: string) {
 
 async function saveDevice() {
   await send('gocqhttp/device', sid.value, data.value.device)
-  message.success('设备信息已保存')
+  message.success('登录信息已保存')
   dialog.value = false
 }
 
