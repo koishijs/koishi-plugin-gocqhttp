@@ -165,7 +165,7 @@ class Launcher extends DataService<Dict<Data>> {
       ...bot.config.gocqhttp,
     }
     if ('endpoint' in config) {
-      config.endpoint = `127.0.0.1:${this.ctx.router.port}`
+      config.endpoint = `127.0.0.1:${new URL(config.endpoint).port}`
     }
     if ('path' in config) {
       const { port, host = 'localhost' } = bot.ctx.root.config
