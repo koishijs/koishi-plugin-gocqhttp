@@ -165,7 +165,8 @@ class Launcher extends DataService<Dict<Data>> {
       ...bot.config.gocqhttp,
     }
     if ('endpoint' in config) {
-      config.endpoint = `127.0.0.1:${new URL(config.endpoint).port}`
+      const host = this.config.host ?? '127.0.0.1'
+      config.endpoint = `${host}:${new URL(config.endpoint).port}`;
     }
     if ('path' in config) {
       config['selfUrl'] = `127.0.0.1:${this.ctx.router.port}${config.path}`
@@ -362,14 +363,16 @@ namespace Launcher {
   export const filter = false
 
   export interface Config {
-    root?: string
-    signServer?: string
-    logLevel?: number
-    template?: string
-    message?: Dict
+    host: string;
+    root?: string;
+    signServer?: string;
+    logLevel?: number;
+    template?: string;
+    message?: Dict;
   }
 
   export const Config: Schema<Config> = Schema.object({
+    host: Schema.string().description('要监听的 IP 地址。如果将此设置为 0.0.0.0 将监听所有地址，包括局域网和公网地址。').default('127.0.0.1'),
     root: Schema.string().description('存放账户文件的目录。').default('accounts'),
     signServer: Schema.string().description('签名服务器地址。'),
     logLevel: Schema.number().description('输出日志等级。').default(2),
