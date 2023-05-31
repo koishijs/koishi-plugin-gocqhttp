@@ -3,12 +3,11 @@ import OneBotBot from '@koishijs/plugin-adapter-onebot'
 import { DataService } from '@koishijs/plugin-console'
 import {} from '@koishijs/plugin-market'
 import { ChildProcess } from 'child_process'
-import { resolve } from 'path'
-import { createReadStream, promises as fsp } from 'fs'
+import { join, resolve } from 'path'
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'fs/promises'
+import { createReadStream, promises as fsp, Stats } from 'fs'
 import gocqhttp from 'go-cqhttp'
 import strip from 'strip-ansi'
-
-const { mkdir, readFile, writeFile } = fsp
 
 declare module '@koishijs/plugin-console' {
   namespace Console {
@@ -80,6 +79,7 @@ interface Data {
 class Launcher extends DataService<Dict<Data>> {
   payload: Dict<Data> = Object.create(null)
   templateTask: Promise<string>
+  migrateTask: Promise<void>
 
   constructor(ctx: Context, private config: Launcher.Config) {
     super(ctx, 'gocqhttp', { authority: 4 })
@@ -87,6 +87,7 @@ class Launcher extends DataService<Dict<Data>> {
 
     ctx.on('bot-connect', async (bot: OneBotBot) => {
       if (!bot.config.gocqhttp?.enabled) return
+      await this.start()
       return this.connect(bot)
     })
 
@@ -141,6 +142,37 @@ class Launcher extends DataService<Dict<Data>> {
     })
   }
 
+  // cp() can only be used since node 16
+  async cp(src: string, dest: string) {
+    const dirents = await readdir(src, { withFileTypes: true })
+    for (const dirent of dirents) {
+      const srcFile = join(src, dirent.name)
+      const destFile = join(dest, dirent.name)
+      if (dirent.isFile()) {
+        await copyFile(srcFile, destFile)
+      } else if (dirent.isDirectory()) {
+        await mkdir(destFile)
+        await this.cp(srcFile, destFile)
+      }
+    }
+  }
+
+  async start() {
+    return this.migrateTask = this.migrate()
+  }
+
+  private async migrate() {
+    const legacy = resolve(this.ctx.baseDir, 'accounts')
+    const folder = resolve(this.ctx.baseDir, this.config.root)
+    await mkdir(folder, { recursive: true })
+    const stats: Stats = await stat(legacy).catch(() => null)
+    if (stats?.isDirectory()) {
+      logger.info('migrating to data directory')
+      await this.cp(legacy, folder)
+      await rm(legacy, { recursive: true, force: true })
+    }
+  }
+
   private async write(sid: string, text: string) {
     const bot = this.ctx.bots[sid] as OneBotBot
     return new Promise<void>((resolve, reject) => {
@@ -165,7 +197,11 @@ class Launcher extends DataService<Dict<Data>> {
       ...bot.config.gocqhttp,
     }
     if ('endpoint' in config) {
-      config.endpoint = `127.0.0.1:${new URL(config.endpoint).port}`
+      try {
+        config.endpoint = `127.0.0.1:${new URL(config.endpoint).port}`
+      } catch (e) {
+        logger.error('invalid endpoint:', config.endpoint)
+      }
     }
     if ('path' in config) {
       config['selfUrl'] = `127.0.0.1:${this.ctx.router.port}${config.path}`
@@ -370,7 +406,7 @@ namespace Launcher {
   }
 
   export const Config: Schema<Config> = Schema.object({
-    root: Schema.string().description('存放账户文件的目录。').default('accounts'),
+    root: Schema.string().description('存放账户文件的目录。').default('data/go-cqhttp/accounts'),
     signServer: Schema.string().description('签名服务器地址。'),
     logLevel: Schema.number().description('输出日志等级。').default(2),
     template: Schema.string().description('使用的配置文件模板。').hidden(),
