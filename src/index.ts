@@ -165,8 +165,7 @@ class Launcher extends DataService<Dict<Data>> {
       ...bot.config.gocqhttp,
     }
     if ('endpoint' in config) {
-      const host = this.config.host ?? '127.0.0.1'
-      config.endpoint = `${host}:${new URL(config.endpoint).port}`;
+      config.endpoint = `${this.config.host}:${new URL(config.endpoint).port}`;
     }
     if ('path' in config) {
       config['selfUrl'] = `127.0.0.1:${this.ctx.router.port}${config.path}`
@@ -363,12 +362,12 @@ namespace Launcher {
   export const filter = false
 
   export interface Config {
-    host: string;
-    root?: string;
-    signServer?: string;
-    logLevel?: number;
-    template?: string;
-    message?: Dict;
+    host: string
+    root?: string
+    signServer?: string
+    logLevel?: number
+    template?: string
+    message?: Dict
   }
 
   export const Config: Schema<Config> = Schema.object({
