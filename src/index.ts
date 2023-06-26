@@ -92,7 +92,6 @@ class Launcher extends DataService<Dict<Data>> {
     })
 
     ctx.on('bot-disconnect', async (bot: OneBotBot) => {
-      if (!bot.config.gocqhttp?.enabled) return
       return this.disconnect(bot, true)
     })
 
@@ -143,7 +142,7 @@ class Launcher extends DataService<Dict<Data>> {
   }
 
   // cp() can only be used since node 16
-  async cp(src: string, dest: string) {
+  private async cp(src: string, dest: string) {
     const dirents = await readdir(src, { withFileTypes: true })
     for (const dirent of dirents) {
       const srcFile = join(src, dirent.name)
@@ -157,10 +156,6 @@ class Launcher extends DataService<Dict<Data>> {
     }
   }
 
-  async start() {
-    return this.migrateTask = this.migrate()
-  }
-
   private async migrate() {
     const legacy = resolve(this.ctx.baseDir, 'accounts')
     const folder = resolve(this.ctx.baseDir, this.config.root)
@@ -170,6 +165,16 @@ class Launcher extends DataService<Dict<Data>> {
       logger.info('migrating to data directory')
       await this.cp(legacy, folder)
       await rm(legacy, { recursive: true, force: true })
+    }
+  }
+
+  async start() {
+    return this.migrateTask = this.migrate()
+  }
+
+  async stop() {
+    for (const bot of this.ctx.bots) {
+      this.disconnect(bot as OneBotBot, true)
     }
   }
 
@@ -385,6 +390,7 @@ class Launcher extends DataService<Dict<Data>> {
   async disconnect(bot: OneBotBot, hard?: boolean) {
     bot.process?.kill()
     bot.process = null
+    if (!this.payload[bot.sid]) return
     if (hard) {
       delete this.payload[bot.sid]
       this.refresh()
@@ -408,7 +414,10 @@ namespace Launcher {
 
   export const Config: Schema<Config> = Schema.object({
     host: Schema.string().description('要监听的 IP 地址。如果将此设置为 0.0.0.0 将监听所有地址，包括局域网和公网地址。').default('127.0.0.1'),
-    root: Schema.string().description('存放账户文件的目录。').default('data/go-cqhttp/accounts'),
+    root: Schema.path({
+      filters: ['directory'],
+      allowCreate: true,
+    }).description('存放账户文件的目录。').default('data/go-cqhttp/accounts'),
     signServer: Schema.string().description('签名服务器地址。'),
     logLevel: Schema.number().description('输出日志等级。').default(2),
     template: Schema.string().description('使用的配置文件模板。').hidden(),
