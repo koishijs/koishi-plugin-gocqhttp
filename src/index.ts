@@ -198,6 +198,7 @@ class Launcher extends DataService<Dict<Data>> {
     const template = await (this.templateTask ||= this.getTemplate())
     const config = {
       message: JSON.stringify(this.config.message),
+      signServer: this.config.signServer,
       ...bot.config,
       ...bot.config.gocqhttp,
     }
@@ -253,7 +254,7 @@ class Launcher extends DataService<Dict<Data>> {
 
   async connect(bot: OneBotBot) {
     // create working folder
-    const { root, signServer } = this.config
+    const { root } = this.config
     const cwd = resolve(bot.ctx.baseDir, root, bot.selfId)
     await mkdir(cwd, { recursive: true })
 
@@ -264,7 +265,7 @@ class Launcher extends DataService<Dict<Data>> {
       this.setData(bot, { status: 'init' })
 
       // spawn go-cqhttp process
-      bot.process = gocqhttp({ cwd, faststart: true, signServer })
+      bot.process = gocqhttp({ cwd, faststart: true })
 
       const handleData = async (data: any) => {
         data = strip(data.toString()).trim()
