@@ -199,6 +199,8 @@ class Launcher extends DataService<Dict<Data>> {
     const config = {
       message: JSON.stringify(this.config.message),
       signServer: this.config.signServer,
+      key: this.config.key,
+      isBelow110: this.config.isBelow110,
       ...bot.config,
       ...bot.config.gocqhttp,
     }
@@ -408,6 +410,8 @@ namespace Launcher {
     host: string
     root?: string
     signServer?: string
+    key?: string
+    isBelow110?: boolean
     logLevel?: number
     template?: string
     message?: Dict
@@ -420,6 +424,8 @@ namespace Launcher {
       allowCreate: true,
     }).description('存放账户文件的目录。').default('data/go-cqhttp/accounts'),
     signServer: Schema.string().description('签名服务器地址。'),
+    key: Schema.string().description('签名服务器密钥。').default('114514'),
+    isBelow110: Schema.boolean().default(false).description('签名服务器是否低于 1.1.0 版本。'),
     logLevel: Schema.number().description('输出日志等级。').default(2),
     template: Schema.string().description('使用的配置文件模板。').hidden(),
     message: Schema.object({
