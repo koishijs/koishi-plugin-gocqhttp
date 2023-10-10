@@ -50,16 +50,16 @@
     }
   },
   "peerDependencies": {
-    "koishi": "^4.13.5"
+    "koishi": "^4.15.0"
   },
   "devDependencies": {
-    "@koishijs/client": "^5.11.6",
-    "@koishijs/plugin-adapter-onebot": "^5.7.1",
-    "@koishijs/plugin-console": "^5.11.6",
-    "@koishijs/plugin-market": "^2.2.1",
-    "@types/node": "^18.16.9",
-    "koishi": "^4.13.5",
-    "typescript": "^5.0.4"
+    "@koishijs/client": "^5.16.0",
+    "@koishijs/plugin-adapter-onebot": "^6.0.2",
+    "@koishijs/plugin-console": "^5.16.0",
+    "@koishijs/plugin-market": "^2.3.0",
+    "@types/node": "^20.4.2",
+    "koishi": "^4.15.0",
+    "typescript": "^5.1.6"
   },
   "dependencies": {
     "go-cqhttp": "^5.0.0",

@@ -3,8 +3,8 @@ import OneBotBot from '@koishijs/plugin-adapter-onebot'
 import { DataService } from '@koishijs/plugin-console'
 import {} from '@koishijs/plugin-market'
 import { ChildProcess } from 'child_process'
-import { join, resolve } from 'path'
-import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'fs/promises'
+import { resolve } from 'path'
+import { cp, mkdir, readFile, rm, stat, writeFile } from 'fs/promises'
 import { createReadStream, promises as fsp, Stats } from 'fs'
 import gocqhttp from 'go-cqhttp'
 import strip from 'strip-ansi'
@@ -141,21 +141,6 @@ class Launcher extends DataService<Dict<Data>> {
     })
   }
 
-  // cp() can only be used since node 16
-  private async cp(src: string, dest: string) {
-    const dirents = await readdir(src, { withFileTypes: true })
-    for (const dirent of dirents) {
-      const srcFile = join(src, dirent.name)
-      const destFile = join(dest, dirent.name)
-      if (dirent.isFile()) {
-        await copyFile(srcFile, destFile)
-      } else if (dirent.isDirectory()) {
-        await mkdir(destFile)
-        await this.cp(srcFile, destFile)
-      }
-    }
-  }
-
   private async migrate() {
     const legacy = resolve(this.ctx.baseDir, 'accounts')
     const folder = resolve(this.ctx.baseDir, this.config.root)
@@ -163,7 +148,7 @@ class Launcher extends DataService<Dict<Data>> {
     const stats: Stats = await stat(legacy).catch(() => null)
     if (stats?.isDirectory()) {
       logger.info('migrating to data directory')
-      await this.cp(legacy, folder)
+      await cp(legacy, folder)
       await rm(legacy, { recursive: true, force: true })
     }
   }
