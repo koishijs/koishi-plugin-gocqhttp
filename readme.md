@@ -1,3 +1,11 @@
+## 本插件停止维护
+
+请移步：<https://github.com/Mrs4s/go-cqhttp/issues/2471>
+
+愿我们能在更加开放的平行世界再次相遇。
+
+---
+
 # koishi-plugin-gocqhttp
  
 [![npm](https://img.shields.io/npm/v/koishi-plugin-gocqhttp?style=flat-square)](https://www.npmjs.com/package/koishi-plugin-gocqhttp)
@@ -10,7 +18,7 @@
 - [x] 手机短信验证码
 - [x] captcha 图片
 - [x] 滑条验证
-- [ ] 设置登录设备
+- [x] 设置登录设备
 
 ## 安装
 

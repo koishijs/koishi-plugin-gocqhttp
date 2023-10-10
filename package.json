@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-gocqhttp",
   "description": "go-cqhttp launcher for Koishi",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -40,8 +40,8 @@
   ],
   "koishi": {
     "description": {
-      "zh": "[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 启动器",
-      "en": "[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) launcher"
+      "zh": "**[已停止维护]** [go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 启动器",
+      "en": "**[DEPRECATED]** [go-cqhttp](https://github.com/Mrs4s/go-cqhttp) launcher"
     },
     "service": {
       "optional": [
